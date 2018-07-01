@@ -1,6 +1,6 @@
 run : main main2
 	./main test 5
-	./main2 
+	./main2 test 3 
 main : main.o
 	gcc main.o -Wall -o main
 main.o : main.c
