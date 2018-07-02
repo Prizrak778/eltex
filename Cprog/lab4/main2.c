@@ -11,13 +11,14 @@ void check(FILE *file, char file_name[], int col_puts)
 	int str_len;
 	while(!feof(file))
 	{
-		fscanf(file, "%s", input_str);
+		fscanf(file, "%[^\n]s", input_str);
+		fscanf(file, "\n");
 		for(int i = 0; i<strlen(input_str); i++)
 		{
 			if(input_str[i]==' ')
 			{
 				str_len = strlen(input_str);
-				for(int j = str_len+1; j>i; j--)
+				for(int j = str_len+1+col_puts; j>i+col_puts; j--)
 				{
 					input_str[j]=input_str[j-col_puts];
 				}
@@ -27,10 +28,7 @@ void check(FILE *file, char file_name[], int col_puts)
 				}
 			}
 		}
-		if(!feof(file))
-		{
-			fprintf(file_out, "%s\n", input_str);
-		}
+		fprintf(file_out, "%s\n", input_str);
 	}
 }
 

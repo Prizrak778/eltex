@@ -14,7 +14,8 @@ void check(FILE *file, char file_name[], int col_number)
 	while(!feof(file))
 	{
 		col_f_number=0;
-		fscanf(file, "%s", input_str);
+		fscanf(file, "%[^\n]s", input_str);
+		fscanf(file, "\n");
 		str_without_num=strpbrk(input_str, number_str);
 		if(str_without_num!=NULL)
 		{
@@ -24,7 +25,7 @@ void check(FILE *file, char file_name[], int col_number)
 		{
 			col_f_number++;
 		}
-		if(!feof(file)&&col_number==col_f_number)
+		if(col_number==col_f_number)
 		{
 			fprintf(file_out, "%s\n", input_str);
 		}
