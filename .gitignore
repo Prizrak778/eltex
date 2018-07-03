@@ -1,4 +1,7 @@
 *.o
 main
 main2
+main3
 *.swp
+*.a
+*.so
