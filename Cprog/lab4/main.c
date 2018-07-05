@@ -55,7 +55,6 @@ FILE *input(int argc, char **argv, int *col_number)
 
 int main(int argc, char ** argv)
 {
-	
 	int col_number;
 	FILE *file=input(argc, argv, &col_number);
 	check(file, argv[1], col_number);	
