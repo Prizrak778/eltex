@@ -4,39 +4,64 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <signal.h>
+void work(int gold_mine, int col_get_mine)
+{
+	while(gold_mine > 0)
+	{
+		gold_mine-=col_get_mine;
+		printf("Process %d: Осталось золота %d\n", getpid(), gold_mine);
+		int sleep_time= rand()%10;
+		printf("Process %d: Время сна %d\n", getpid(), sleep_time);
+		sleep(sleep_time);
+	}
+	printf("Process %d: GET OUT IN THE CHOPEER!!!!\n", getpid());
+	exit(getpid());
+}
 
 int main()
 {
-	pid_t pid;
-	pid = fork();
-	if(-1 == pid)
+	pid_t pid_parent = getpid();
+	int status_pid;
+	int stat;
+	int col_work;
+	int gold_mine;
+	int col_get_mine;
+	printf("Введите количество балбесов собирающие золото в шахте\n");
+	scanf("%d", &col_work);
+	printf("Введите сколько они золота буду брать\n");
+	scanf("%d", &col_get_mine);
+	pid_t pid_work[col_work];
+	printf("Введите количество золота в шахте\n");
+	scanf("%d", &gold_mine);
+	for(int i = 0; i<col_work&& pid_parent==getpid() ; i++)
 	{
-		perror("fork is break");
-		exit(1);
+		pid_work[i] = fork();
+		srand(getpid());
+		if(pid_work[i] == -1)
+		{
+			perror("Fork is down, process is not work\n");
+			printf("Process %d is not work", i);
+			for(int j = 0; j<i; j++)
+			{
+				kill(pid_work[j], SIGKILL);
+			}
+			exit(1);
+		}
 	}
-	else if(0 == pid)
+	if(getpid()!=pid_parent)
 	{
-		printf("Child: Это процесс-потомок!\n");
-		printf("Child: PID -- %d\n", getpid());
-		printf("Child: PID родительского процесса -- %d\n", getppid());
-		exit(0);
+		work(gold_mine, col_get_mine);
 	}
 	else
 	{
-		printf("Parent: Это процесс-родитель!\n");
-		printf("Parent: PID -- %d\n", getpid());
-		printf("Parenf: PID потомка %d\n", pid);
-		if(wait(0)==-1)
+		for(int i = 0; i < col_work; i++)
 		{
-			perror("wait() error");
-		}
-		else if(WIFEXITED(0))
-		{
-			printf("Parent: Код возврата потомка: %d\n", WEXITSTATUS(0));
-		}
-		else
-		{
-			perror("Parent: GET OUT IN THE CHOPPER!\n");
+			status_pid = waitpid(pid_work[i], &stat, 0);
+			if(pid_work[i] == status_pid)
+			{
+				printf("Процесс потомок %d свалил на вертолёте, result = %d\n", i, WEXITSTATUS(stat));
+			}
 		}
 	}
 	return 0;

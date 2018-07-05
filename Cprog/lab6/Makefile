@@ -1,5 +1,5 @@
 run : main
-	./main 
+	./main<test.txt 
 main : main.o
 	gcc main.o -Wall -o main
 main.o : main.c
