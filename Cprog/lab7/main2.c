@@ -9,9 +9,13 @@
 
 #define FIFO1 "./fifo.1"
 #define FIFO2 "./fifo.2"
+void work(int gold_mine, int col_get_mine, pid_t pid_mine)
+{
+}
 
 int main()
 {
+	int stat;
 	int col_work;
 	int get_col_gold;
 	int gold_mine;
@@ -51,6 +55,20 @@ int main()
 	{
 		work(gold_mine, col_get_mine, pid_mine);
 	}
+	else
+	{
+		status-pid = waitpid(pid_mine, &stat, 0);
+		if(pid_mine == status_pid)
+		{
+			printf("Процесс потомое %d вышел, result = %d\n", pid_mine, WEXITSTATUS(stat));
+		}
+		for(int i = 0; i < col_work; i++)
+		{
+			kill(pid_work[i], SIGKILL);
+			printf("Process: %d вышел\n", pid_work[i]);
+		}
+	}
+	printf("End\n");
 	return 0;
 }
 
