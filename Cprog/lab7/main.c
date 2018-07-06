@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <unistd.h>
+#include <string.h>
 
 int fd1[2];
 
@@ -15,14 +16,14 @@ void work(int gold_mine, int col_get_mine, pid_t pid_mine)
 	{
 		printf("Шахта найдена\n");
 		close(fd1[1]);
-		char col_gold[1024];
+		int col_gold;
 		printf("В шахте золота: %d\n", gold_mine);
 		while(gold_mine>0)
 		{
 			printf("В шахте нет рабочих\n");
-			read(fd1[0], col_gold, sizeof(col_gold));
-			printf("Col_gold = %d\n", atoi(col_gold));
-			gold_mine-=atoi(col_gold);
+			read(fd1[0], &col_gold, sizeof(col_gold));
+			printf("Col_gold: %d\n", col_gold);
+			gold_mine-=col_gold;
 			printf("Золото осталось: %d\n", gold_mine);
 		}
 		printf("Шахта рухнула\n");
@@ -34,9 +35,9 @@ void work(int gold_mine, int col_get_mine, pid_t pid_mine)
 		close(fd1[0]);
 		while(1)
 		{
-			write(fd1[1], &col_get_mine, sizeof(col_get_mine));
+			write(fd1[1], &col_get_mine, sizeof(int));
 			printf("Process: %d, отнёс золото\n", getpid());
-			int time = rand()%15;
+			int time = rand()%20;
 			printf("Process: %d, вернётся через %d\n", getpid(), time);
 			sleep(time);
 		}
