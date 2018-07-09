@@ -71,7 +71,6 @@ then
 			read num_cron
 			if [[ $num_cron < $iter ]]
 			then
-				echo "Ddtlbnt"
 				iter=1
 				while read LINE
 				do
@@ -82,6 +81,12 @@ then
 					let iter=$iter+1
 				done<mycron
 				crontab -l| grep -v "$line_cron">mycron
+				echo "Введите исправленные данные"
+				echo "Введите мируты(0-59)"
+				read min
+				echo "Введите приложение, которое будет контролироваться"
+				read exe_name
+				echo "$min * * * * DISPLAY=:0.0 $script_name $exe_name">>mycron
 				crontab mycron
 				rm mycron
 			else
@@ -90,5 +95,27 @@ then
 		;;
 	esac
 else
-	
+	exe_str="/usr/bin/$1"
+	ps ax>ps_ax.txt
+	col_ps=`grep -i $1 ps_ax.txt|wc -l`
+	col_ps_usr=`grep -i $exe_str ps_ax.txt|wc -l`
+	let col_ps_all=$col_ps+$col_ps_usr
+	log_file="/var/log/$1.log"
+	log_file_usr=echo `pwd`
+	log_file_usr="$log_file_usr/$0.log"
+	if [[ $col_ps_all > 0 ]]
+	then
+		echo -n `date`>>$log_file
+		echo " Процесс $1 работает">>$log_file
+		echo -n `date`>>$log_file_usr
+		echo " Процесс $1 работает">>$log_file_usr
+	else
+		echo -n `date`>>$log_file
+		echo " Процесс $1 не работает или небыл найден">>$log_file
+		echo -n `date`>>$log_file_usr
+		echo " Процесс $1 не работает или небыл найден">>$log_file_usr
+	fi
+	rm ps_ax.txt
 fi
+exit 0
+
