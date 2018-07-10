@@ -23,19 +23,19 @@ then
 			read type2_get
 			case $type2_get in
 				"0")
-					crontab -l|grep -v "control_process">mycron
+					crontab -l|grep "control_process">mycron
 					crontab mycron
 					rm mycron
 					;;
 				"1")
 					echo "Список контролей:"
-					crontab -l|grep "control_process">mycron
+					crontab -l>mycron
 					iter=1
 					while read LINE
 					do
 						echo "№$iter: $LINE"
 						let iter=$iter+1
-					done<mycron
+					done<mycron|grep "control_process"
 					echo "Для удаления укажите номер контроля"
 					read num_cron
 					if [[ $num_cron < $iter ]]
@@ -60,13 +60,13 @@ then
 		;;
 		"2")
 			echo "Список контролей:"
-			crontab -l|grep "control_process">mycron
+			crontab -l>mycron
 			iter=1
 			while read LINE
 			do
 				echo "№$iter: $LINE"
 				let iter=$iter+1
-			done<mycron
+			done<mycron|grep "control_process"
 			echo "Для редактирования укажите номер контроля"
 			read num_cron
 			if [[ $num_cron < $iter ]]

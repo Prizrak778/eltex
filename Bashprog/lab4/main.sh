@@ -38,6 +38,9 @@ then
 				;;
 			esac
 			echo "$min$hour$day$month$day_week$dir_save$dir_backup$type_backup">>.config.txt
+			echo "$dir_save">>.config.txt
+			echo "$dir_backup">>.config.txt
+			echo "$type_get2">>.config.txt
 			crontab -l > mycron
 			echo "$min $hour $day $month $day_week DISPLAY=:0.0 $script_name<$pwd_dir/.config.txt $min$hour$day$month$day_week$dir_save$dir_backup$type_backup backup">>mycron
 			crontab mycron
@@ -51,7 +54,7 @@ then
 			do
 				echo "№$iter: $LINE"
 				let iter=$iter+1
-			done < mycron
+			done < mycron| grep "backup"
 			echo "Для редактирования бэкапа укажите номер бэкапа"
 			read num_cron
 			if [[ $num_cron<$iter ]]
@@ -74,7 +77,7 @@ then
 					fi
 					let iter=$iter+1
 				done<.config.txt
-				cat .config.txt|grep -v $LINE>.config.txt
+				cat .config.txt|grep -v $LINE -A 3>.config.txt
 				echo "Введите исправления"
 				echo "Введите минуты(0-59)"
 				read min
@@ -105,6 +108,9 @@ then
 					;;
 				esac
 				echo "$min$hour$day$month$day_week$dir_save$dir_backup$type_backup">>.config.txt
+				echo "$dir_save">>.config.txt
+				echo "$dir_backup">>.config.txt
+				echo "$type_get2">>.config.txt
 				echo "$min $hour $day $month $day_week DISPLAY=:0.0 $script_name<$pwd_dir/.config.txt $min$hour$day$month$day_week$dir_save$dir_backup$type_backup backup">>mycron
 				crontab mycron
 				rm mycron
@@ -128,7 +134,7 @@ then
 					do
 						echo "№$iter: $LINE"
 						let iter=$iter+1
-					done < mycron
+					done < mycron| grep "backup"
 					echo "Для удаления укажите номер будильника"
 					read num_cron
 					if [[ $num_cron < $iter ]]
@@ -151,7 +157,7 @@ then
 						fi
 						let iter=$iter+1
 					done<.config.txt
-					cat .config.txt|grep -v $LINE>.config.txt
+					cat .config.txt|grep -v $LINE -A 3>.config.txt
 					crontab mycron
 					rm mycron
 					else
@@ -162,6 +168,31 @@ then
 			;;
 	esac
 else
+	echo "$1">test.txt
+	flag=1
+	while [ $flag -eq 1 ]
+	do
+		read key
+		echo "$key">>test.txt
+		if [[ "$key" == $1 ]]
+		then
+			flag=0
+		fi
+	done
+	read dir_save
+	read dir_backup
+	read type_backup
+	case "$type_backup" in
+			"0")
+				dd if=$dir_save of=$dir_backup
+				;;
+			"1")
+				/bin/tar -cvvf "$dir_backup.tar" "$dir_save"
+				;;
+			"2")
+				rsync -avz "$dir_save" "$dir_backup"
+				;;
+	esac
 fi
 exit 0
 
