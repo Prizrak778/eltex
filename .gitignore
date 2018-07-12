@@ -5,3 +5,7 @@ main3
 *.swp
 *.a
 *.so
+mycron
+mycrontab
+*.log
+.config.*
