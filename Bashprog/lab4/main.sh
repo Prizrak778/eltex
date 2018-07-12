@@ -21,22 +21,31 @@ then
 			read day_week
 			echo "Введите что вы хотите забэкапить(полный путь)"
 			read dir_save
+			if test -b $type_file
+			then
+				type_get2=0
+				type_backup="dd"
+			elif test -d $type_file
+			then
+				type_get2=2
+				type_backup="rsync"
+			elif test -f $type_file
+			then
+				type_backup="tar"
+				echo "Заархивировать файл? 0 - да, 1 - нет"
+				read type_get2
+				if [[ $type_get2 = "0" ]]
+				then
+					type_get2=1
+				else
+					type_get2=3
+				fi
+			else
+				echo "Невозможно копировать данный тип"
+				exit 0
+			fi
 			echo "Введите где вы хотите сохранить(полный путь)"
 			read dir_backup
-			echo "Введите способы бэкапа"
-			echo "0 - блочное копирование(dd), 1 - заархивировать(tar), 2 - (rsync)"
-			read type_get2
-			case $type_get2 in
-				"0")
-					type_backup="dd"
-				;;
-				"1")
-					type_backup="tar"
-				;;
-				"2")
-					type_backup="rsync"
-				;;
-			esac
 			echo "$min$hour$day$month$day_week$dir_save$dir_backup$type_backup">>.config.txt
 			echo "$dir_save">>.config.txt
 			echo "$dir_backup">>.config.txt
@@ -93,20 +102,27 @@ then
 				read dir_save
 				echo "Введите где вы хотите сохранить(полный путь)"
 				read dir_backup
-				echo "Введите способы бэкапа"
-				echo "0 - блочное копирование(dd), 1 - заархивировать(tar), 2 - (rsync)"
-				read type_get2
-				case $type_get2 in
-					"0")
-						type_backup="dd"
-					;;
-					"1")
-						type_backup="tar"
-					;;
-					"2")
-						type_backup="rsync"
-					;;
-				esac
+				type_file=`ls -all $dir_save`
+				type_file=`echo ${type_file:0:1}`
+				if [[ $type_file -eq b ]]
+				then
+					type_get2=0
+					type_backup="dd"
+				elif [[ $type_file -eq d ]]
+				then
+					type_get2=2
+					type_backup="rsync"
+				else
+					type_backup="tar"
+					echo "Заархивировать файл? 0 - да, 1 - нет"
+					read type_get2
+					if [[ $type_get2 -eq 0 ]]
+					then
+						type_get2=1
+					else
+						type_get2=3
+					fi
+				fi
 				echo "$min$hour$day$month$day_week$dir_save$dir_backup$type_backup">>.config.txt
 				echo "$dir_save">>.config.txt
 				echo "$dir_backup">>.config.txt
@@ -168,12 +184,10 @@ then
 			;;
 	esac
 else
-	echo "$1">test.txt
 	flag=1
 	while [ $flag -eq 1 ]
 	do
 		read key
-		echo "$key">>test.txt
 		if [[ "$key" == $1 ]]
 		then
 			flag=0
@@ -184,13 +198,16 @@ else
 	read type_backup
 	case "$type_backup" in
 			"0")
-				dd if=$dir_save of=$dir_backup
+				dd if=$dir_save of=$dir_backup bs=4096
 				;;
 			"1")
-				/bin/tar -cvvf "$dir_backup.tar" "$dir_save"
+				/bin/tar  -cvzf "$dir_backup.tar" "$dir_save"
 				;;
 			"2")
 				rsync -avz "$dir_save" "$dir_backup"
+				;;
+			"3")
+				/bin/tar -cvf "$dir_backup.tar" "$dir_save"
 				;;
 	esac
 fi
