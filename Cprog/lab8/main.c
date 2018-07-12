@@ -7,6 +7,18 @@
 #include <signal.h>
 #include <sys/msg.h>
 
+struct msg_buf
+{
+	long mtype;
+	int x;
+	int y;
+	int value;
+};
+
+void game_fild()
+{
+	int r;
+}
 
 int main()
 {
@@ -15,6 +27,9 @@ int main()
 	int stat;
 	int col_gamers;
 	int size_fild;
+	struct msg_buf mgs_text;
+	int msgqid;
+	msgqid = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
 	printf("Введите количество балбесов игры\n");
 	scanf("%d", &col_gamers);
 	printf("Введите размерность поля(поле квадратное)\n");
@@ -44,6 +59,7 @@ int main()
 	}
 	if(getpid()!=pid_parent)
 	{
+		game_fild();
 		exit(getpid());
 	}
 	else
@@ -62,5 +78,6 @@ int main()
 			printf("Процесс потомок поле покинул игру, result = %d\n", WEXITSTATUS(stat));
 		}
 	}
+	msgctl(msgqid, IPC_RMID, NULL);
 	return 0;
 }
