@@ -15,9 +15,37 @@ struct msg_buf
 	int value;
 };
 
-void game_fild()
+void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int size_fild, pid_t pid_fild, int msgqid)
 {
-	int r;
+	if(pid_fild == 0)
+	{
+		int fild_games[size_fild][size_fild];
+		system("clear");
+		for(int i = 0; i < size_fild; i++)
+		{
+			for(int j = 0; j < size_fild; j++)
+			{
+				fild_games[i][j]=rand()%3-1;
+				printf("%2d ", fild_games[i][j]);
+			}
+			printf("\n");
+		}
+		for(int i = 0; i < col_gamers; i++)
+		{
+			printf("\033[1;3%dm *\033[0m - life = %d\n", i, 1);
+		}
+		while(col_gamers>1)
+		{
+			
+		}
+	}
+	else
+	{
+		int x = rand()%size_fild;
+		int y = rand()%size_fild;
+		int life = 1;
+		sleep(2);
+	}
 }
 
 int main()
@@ -27,7 +55,7 @@ int main()
 	int stat;
 	int col_gamers;
 	int size_fild;
-	struct msg_buf mgs_text;
+	struct msg_buf msg_text;
 	int msgqid;
 	msgqid = msgget(IPC_PRIVATE, IPC_CREAT | IPC_EXCL | 0666);
 	printf("Введите количество балбесов игры\n");
@@ -59,7 +87,7 @@ int main()
 	}
 	if(getpid()!=pid_parent)
 	{
-		game_fild();
+		game_fild(pid_gamers, msg_text, col_gamers, size_fild, pid_fild, msgqid);
 		exit(getpid());
 	}
 	else
