@@ -46,9 +46,9 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 			status_gamers[i][1]=msg_text.y;
 			status_gamers[i][2]=1;
 			status_gamers[i][3]=msg_text.pid_gamers;
-			for(int j = 0; j < i; j++)
+			for(int j = 0; j < col_gamers; j++)
 			{
-				if(status_gamers[i][0]==status_gamers[j][0]&&status_gamers[i][1]==status_gamers[j][1]&&status_gamers[i][2]>0&&status_gamers[j][2]>0)
+				if(status_gamers[i][0]==status_gamers[j][0]&&status_gamers[i][1]==status_gamers[j][1]&&status_gamers[i][2]>0&&status_gamers[j][2]>0&&i!=j)
 				{
 					int life_temp = status_gamers[i][2];
 					status_gamers[i][2]-=status_gamers[j][2];
@@ -101,10 +101,6 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 		}
 		if(flag_end==col_gamers-1)
 		{
-			/*for(int i = 0; i<col_gamers; i++)
-			{
-				kill(pid_gamers[i],SIGKILL);
-			}*/
 			exit(getpid());
 		}
 		int flag=1;
@@ -114,8 +110,6 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 			for(int i = 0; i < col_gamers; i++)
 			{
 				msgrcv(msgqid, &msg_text, lenght, type, 0);
-				//printf("end_type\n");
-				//printf("Запись для %d\n",status_gamers[i][3]);
 				for(int j=0; j<col_gamers; j++)
 				{
 					if(status_gamers[j][3]==msg_text.pid_gamers)
@@ -126,11 +120,10 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 				}
 				if(status_gamers[i][2]>0)
 				{
-					for(int j = 0; j < i; j++)
+					for(int j = 0; j < col_gamers; j++)
 					{
-						if(status_gamers[i][0]==status_gamers[j][0]&&status_gamers[i][1]==status_gamers[j][1]&&status_gamers[i][2]>0&&status_gamers[j][2]>0)
+						if(status_gamers[i][0]==status_gamers[j][0]&&status_gamers[i][1]==status_gamers[j][1]&&status_gamers[i][2]>0&&status_gamers[j][2]>0&&i!=j)
 						{
-							printf("Бой\n");
 							int life_temp = status_gamers[i][2];
 							status_gamers[i][2]-=status_gamers[j][2];
 							status_gamers[j][2]-=life_temp;
