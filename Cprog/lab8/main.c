@@ -59,8 +59,8 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 			fild_games[msg_text.x][msg_text.y]=0;
 		}
 		sleep(1);
+		system("clear");
 		printf("=======================================\n");
-		//system("clear");
 		printf("Ход=0\n");
 		printf("Игроки расположило по полю\n");
 		for(int i = 0; i < size_fild; i++)
@@ -132,7 +132,7 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 					status_gamers[i][2]+=fild_games[status_gamers[i][0]][status_gamers[i][1]];
 					fild_games[status_gamers[i][0]][status_gamers[i][1]]=0;
 					sleep(1);
-					//system("clear");
+					system("clear");
 					printf("=======================================\n");
 					printf("Ход=%d\n", type-1);
 					printf("Ход игрока %d\n", status_gamers[i][3]);
