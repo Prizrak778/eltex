@@ -10,24 +10,25 @@
 #include <sys/sem.h>
 #include <sys/ipc.h>
 
+#define MAX_LEN 1024
 union semun {
 	int val;
 	struct semid_ds *buf;
 	unsigned short *array;
 	struct seminfo *__buf;
-}
+};
 
-#define MAX_LEN 1024
 //Вариант 9
-void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t pid_file[], char dir_name[], int sem_id)
+void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t* pid_file, char* dir_name, int sem_id)
 {
 	struct sembuf lock_res={0, -1, 0};
-	struct sembuf rel_res={0, 1, 0;}
-	if(pid_dir_name==0)
+	struct sembuf rel_res={0, 1, 0};
+	if(pid_distr_file==0)
 	{
 		int *s;
 		s = shm;
-				//Для определения процессам какой файл им брать
+		//Для определения процессам какой файл им брать
+		printf("Файлы раздаю\n");
 		if((semop(sem_id, &lock_res, 1)) == -1)
 		{
 			printf("Lock failed\n");
@@ -47,20 +48,31 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t pid_file[],
 			printf("Ошибка отключения\n");
 			exit(1);
 		}
+		printf("Файлы розданы\n");
 	}
 	else
 	{
-		FILE *file = fopen(".tepm.txt", "r");
+		FILE *file = fopen(".temp.txt", "r");
 		char file_name[MAX_LEN];
+		printf("Жду %d\n", getpid());
 		sleep(1);
+		printf("Ищу файл %d\n", getpid());
+		int *s;
+		s = shm;
+		int flag = 1;
 		if((semop(sem_id, &lock_res, 1))== -1)
 		{
 			printf("Lock failed\n");
 			exit(1);
 		}
-		while(getpid()!=s[i])
+		for(int i=0; i<col_file&&flag; i++)
 		{
-			fscanf("%s", file_name);
+			int pid_now = getpid();
+			if(pid_now==s[i])
+			{
+				flag=0;
+			}
+			fscanf(file,"%s", file_name);
 		}
 		if((semop(sem_id, &rel_res, 1))== -1)
 		{
@@ -72,6 +84,10 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t pid_file[],
 			printf("Ошибка отключения\n");
 			exit(1);
 		}
+		fclose(file);
+		strcat(dir_name, "/");
+		strcat(dir_name, file_name);
+		printf("%s\n", dir_name);
 	}
 }
 
@@ -88,34 +104,42 @@ int input(char *dir_name)
 	{
 		return -1;
 	}
-	system("cat .temp.txt| wc -l> .col.txt")
+	system("cat .temp.txt| wc -l> .col.txt");
 	FILE *file=fopen(".col.txt", "r");
 	int col_file;
 	fscanf(file, "%d", &col_file);
 	fclose(file);
 	return col_file; 
 }
+
 int main()
 {
 	int status_pid;
 	int stat;
 	char dir_name[MAX_LEN];
+	key_t key;
 	pid_t pid_parent = getpid();
+	pid_t pid_distr_file;
 	int col_file = input(dir_name);
+	pid_t pid_file[col_file];
+	int *shm, shmid;
+	int sem_id;
+	union semun tmp;
+
+	if((key= ftok("b", 'S'))<0)
+	{
+		printf("Невозможно получить ключь\n");
+		exit(1);
+	}
 	if(col_file==-1)
 	{
 		return 1;
 	}
-	pid_t pid_file[col_file];
-	pid_t pid_distr_file;
-	int *shm, shmid;
-	int sem_id;
-	if((sem_id = semget(IPC_PRIVATE, 1, IPC_EXCL|IPC_CREAT|0666))<0)
+	if((sem_id = semget(key, 1, IPC_EXCL|IPC_CREAT|0666))<0)
 	{
 		perror("semget");
 		exit(1);
 	}
-	union semun tmp;
 	tmp.val=1;
 	semctl(sem_id, 0, SETVAL, tmp);
 	if(col_file == 0)
@@ -123,7 +147,7 @@ int main()
 		printf("В этом каталоге нет файлов\n");
 		return 0;
 	}
-	if((shmid = shmget(IPC_PRIVATE, size, IPC_CREAT|0666))<0)
+	if((shmid = shmget(key, col_file*sizeof(int), IPC_CREAT|0666))<0)
 	{
 		perror("shmget");
 		exit(1);
@@ -133,25 +157,29 @@ int main()
 		perror("shmat");
 		exit(1);
 	}
-	pid_distr_file=fork();
-	if(pid_distr_file == -1)
-	{
-		prerror("Fork is down, is not work\n");
-		exit(1);
-	}
-	for(int i = 0; i < col_file&&pid_parent; i++)
+	
+	for(int i = 0; i < col_file&&getpid()==pid_parent; i++)
 	{
 		pid_file[i]=fork();
 		srand(getpid());
 		if(pid_file[i]==-1)
 		{
-			prerror("Fork is down, is not work\n");
+			perror("Fork is down, is not work\n");
 			printf("Process %d is not work", i);
 			for (int j = 0; j < i; j++)
 			{
 				kill(pid_file[j], SIGKILL);
 			}
 			return 1;
+		}
+	}
+	if(getpid()==pid_parent)
+	{
+		pid_distr_file=fork();
+		if(pid_distr_file == -1)
+		{
+			perror("Fork is down, is not work\n");
+			exit(1);
 		}
 	}
 	if(getpid()!=pid_parent)
@@ -174,6 +202,11 @@ int main()
 		{
 			printf("Процесс потомок раздачик файлов завершил работу, result = %d\n", WEXITSTATUS(stat));
 		}
+	}
+	if(semctl(sem_id, 0, IPC_RMID)<0)
+	{
+		printf("Невозможно удалить семафор\n");
+		exit(1);
 	}
 	if(shmctl(shmid, IPC_RMID, 0)<0)
 	{
