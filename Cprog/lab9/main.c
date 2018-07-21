@@ -10,16 +10,28 @@
 
 #define MAX_LEN 1024
 //Вариант 9
-void control_sum()
+void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t pid_file[])
 {
-	int t;
+	if(pid_dir_name==0)
+	{
+		int *s;
+		s = shm;
+		for(int i = 0; i < col_file; i++)
+		{
+			s[i] = pid_file[i];
+		}
+	}
+	else
+	{
+		FILE *file = fopen(".temp.txt", "r");
+	}
 }
 
 int input(char *dir_name)
 {
 	char dir_name_this[MAX_LEN];
 	char commad_line[]={"ls -p "};
-	printf("Введите название папки в которой будет считаться контрольная сумма\n");
+	printf("Введите имя папки в которой хотите провести подсчёт\n");
 	scanf("%s", dir_name_this);
 	strcpy(dir_name, dir_name_this);
 	strcat(commad_line, dir_name_this);
@@ -37,6 +49,8 @@ int input(char *dir_name)
 }
 int main()
 {
+	int status_pid;
+	int stat;
 	char dir_name[MAX_LEN];
 	pid_t pid_parent = getpid();
 	int col_file = input(dir_name);
@@ -45,6 +59,7 @@ int main()
 		return 1;
 	}
 	pid_t pid_file[col_file];
+	pid_t pid_distr_file;
 	int *shm, shmid;
 	if(col_file == 0)
 	{
@@ -59,6 +74,12 @@ int main()
 	if((shm = shmat(shmid, NULL, 0))== (int *) -1)
 	{
 		perror("shmat");
+		exit(1);
+	}
+	pid_distr_file=fork();
+	if(pid_distr_file == -1)
+	{
+		prerror("Fork is down, is not work\n");
 		exit(1);
 	}
 	for(int i = 0; i < col_file&&pid_parent; i++)
@@ -76,7 +97,32 @@ int main()
 			return 1;
 		}
 	}
-	control_sum();
+	if(getpid()!=pid_parent)
+	{
+		control_sum(pid_distr_file, shm, col_file, pid_file);
+		exit(getpid());
+	}
+	else
+	{
+		for(int i = 0; i<col_file; i++)
+		{
+			status_pid=waitpid(pid_file[i], &stat, 0);
+			if(pid_file[i] == status_pid)
+			{
+				printf("Процесс потомок %d завершил свою работу, result =%d \n", i, WEXITSTATUS(stat));
+			}
+		}
+		status_pid=waitpid(pid_distr_file, &stat, 0);
+		if(pid_distr_file == status_pid)
+		{
+			printf("Процесс потомок раздачик файлов завершил работу, result = %d\n", WEXITSTATUS(stat));
+		}
+	}
+	if(shmctl(shmid, IPC_RMID, 0)<0)
+	{
+		printf("Невозможно удалить область\n");
+		exit(1);
+	}
 	system("rm .temp.txt .col.txt");
 	return 0;
 }
