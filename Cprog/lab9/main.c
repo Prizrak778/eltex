@@ -7,23 +7,71 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/ipc.h>
+
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short *array;
+	struct seminfo *__buf;
+}
 
 #define MAX_LEN 1024
 //Вариант 9
-void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t pid_file[])
+void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t pid_file[], char dir_name[], int sem_id)
 {
+	struct sembuf lock_res={0, -1, 0};
+	struct sembuf rel_res={0, 1, 0;}
 	if(pid_dir_name==0)
 	{
 		int *s;
 		s = shm;
+				//Для определения процессам какой файл им брать
+		if((semop(sem_id, &lock_res, 1)) == -1)
+		{
+			printf("Lock failed\n");
+			exit(1);
+		}
 		for(int i = 0; i < col_file; i++)
 		{
 			s[i] = pid_file[i];
 		}
+		if((semop(sem_id, &rel_res, 1))== -1)
+		{
+			printf("Unlock failed\n");
+			exit(1);
+		}
+		if(shmdt(s)<0)
+		{
+			printf("Ошибка отключения\n");
+			exit(1);
+		}
 	}
 	else
 	{
-		FILE *file = fopen(".temp.txt", "r");
+		FILE *file = fopen(".tepm.txt", "r");
+		char file_name[MAX_LEN];
+		sleep(1);
+		if((semop(sem_id, &lock_res, 1))== -1)
+		{
+			printf("Lock failed\n");
+			exit(1);
+		}
+		while(getpid()!=s[i])
+		{
+			fscanf("%s", file_name);
+		}
+		if((semop(sem_id, &rel_res, 1))== -1)
+		{
+			printf("Unlock failed\n");
+			exit(1);
+		}
+		if(shmdt(s)<0)
+		{
+			printf("Ошибка отключения\n");
+			exit(1);
+		}
 	}
 }
 
@@ -61,6 +109,15 @@ int main()
 	pid_t pid_file[col_file];
 	pid_t pid_distr_file;
 	int *shm, shmid;
+	int sem_id;
+	if((sem_id = semget(IPC_PRIVATE, 1, IPC_EXCL|IPC_CREAT|0666))<0)
+	{
+		perror("semget");
+		exit(1);
+	}
+	union semun tmp;
+	tmp.val=1;
+	semctl(sem_id, 0, SETVAL, tmp);
 	if(col_file == 0)
 	{
 		printf("В этом каталоге нет файлов\n");
@@ -68,7 +125,7 @@ int main()
 	}
 	if((shmid = shmget(IPC_PRIVATE, size, IPC_CREAT|0666))<0)
 	{
-		perrir("shmget");
+		perror("shmget");
 		exit(1);
 	}
 	if((shm = shmat(shmid, NULL, 0))== (int *) -1)
@@ -99,7 +156,7 @@ int main()
 	}
 	if(getpid()!=pid_parent)
 	{
-		control_sum(pid_distr_file, shm, col_file, pid_file);
+		control_sum(pid_distr_file, shm, col_file, pid_file, dir_name, sem_id);
 		exit(getpid());
 	}
 	else
