@@ -52,11 +52,16 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t* pid_file, 
 	}
 	else
 	{
-		FILE *file = fopen(".temp.txt", "r");
+		FILE *file;
+		int file_sum = 0;
+		char symbol;
+		if((file = fopen(".temp.txt", "r"))==NULL)
+		{
+			printf("Не удалость открыть .temp.txt\n");
+			exit(1);
+		}
 		char file_name[MAX_LEN];
-		printf("Жду %d\n", getpid());
 		sleep(1);
-		printf("Ищу файл %d\n", getpid());
 		int *s;
 		s = shm;
 		int flag = 1;
@@ -87,14 +92,27 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t* pid_file, 
 		fclose(file);
 		strcat(dir_name, "/");
 		strcat(dir_name, file_name);
-		printf("%s\n", dir_name);
+		printf("Процесс %d начинает обработку файла %s\n",getpid(), dir_name);
+		if((file=fopen(dir_name, "r"))==NULL)
+		{
+			printf("Не получилось открыть файл %s\n", dir_name);
+			exit(1);
+		}
+		
+		while(!feof(file))
+		{
+			fscanf(file, "%c", &symbol);
+			file_sum+=(int)symbol;
+		}
+		printf("Процесс %d закончил обработку файла.\nКонтрольная сумма файла %s равна = %d\n", getpid(), dir_name, file_sum);
+		fclose(file);
 	}
 }
 
 int input(char *dir_name)
 {
 	char dir_name_this[MAX_LEN];
-	char commad_line[]={"ls -p "};
+	char commad_line[]={"ls -p -a"};
 	printf("Введите имя папки в которой хотите провести подсчёт\n");
 	scanf("%s", dir_name_this);
 	strcpy(dir_name, dir_name_this);
@@ -105,7 +123,12 @@ int input(char *dir_name)
 		return -1;
 	}
 	system("cat .temp.txt| wc -l> .col.txt");
-	FILE *file=fopen(".col.txt", "r");
+	FILE *file;
+	if((file=fopen(".col.txt", "r"))==NULL)
+	{
+		printf("Не удалось открыть файл .col.txt\n");
+		exit(1);
+	}
 	int col_file;
 	fscanf(file, "%d", &col_file);
 	fclose(file);
@@ -126,7 +149,7 @@ int main()
 	int sem_id;
 	union semun tmp;
 
-	if((key= ftok("b", 'S'))<0)
+	if((key= ftok(".", 'S'))<0)
 	{
 		printf("Невозможно получить ключь\n");
 		exit(1);
