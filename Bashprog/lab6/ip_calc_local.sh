@@ -84,4 +84,3 @@ echo -e "Broadcast: \e[34m$broadcast_dec\e[0m\t \e[33m$broadcast\e[0m"
 echo -e "Hosts/Net: \e[34m$hostnet\e[0m"
 exit
 
-

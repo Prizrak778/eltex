@@ -1,1 +1,10 @@
-25 12 4 7 3 DISPLAY=:0.0 /usr/bin/thunar
+1 * * * * DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab3/./main.sh vim control_process
+1 12 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 1121072~/testing~/testingtar backup
+7 12 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 7121072/home/ghost/testing/home/ghost/testingtar backup
+18 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 18131072/home/ghost/testing/home/ghost/test_rsyncrsync backup
+19 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 19131072/home/ghost/testing/main.c/home/ghost/qwertytar backup
+21 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 21131072/home/ghost/testing/main.c/home/ghost/qwertytar backup
+26 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 26131072/home/ghost/testing/main.c/home/ghost/qwertytar backup
+26 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 26131072/home/ghost/testing/main.c/home/ghost/qwert_not_arhivtar backup
+43 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 43131072/dev/vcs/home/ghost/qwerty1dd backup
+49 13 10 7 2 DISPLAY=:0.0 /home/ghost/eltex/Bashprog/lab4/./main.sh</home/ghost/eltex/Bashprog/lab4/.config.txt 49131072/dev/vcs1/home/ghost/qwerty1dd backup
