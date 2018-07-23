@@ -1,0 +1,6 @@
+sd
+
+
+
+
+fdi 222 sdsfdsf dalog --stdout --title Редактирование --editbox /home/ghost/eltex/Bashprog/lab5/test.txt 40 100
