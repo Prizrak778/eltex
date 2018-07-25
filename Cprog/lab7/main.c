@@ -21,7 +21,6 @@ void work(int gold_mine, int col_get_mine, pid_t pid_mine)
 		{
 			printf("В шахте нет рабочих\n");
 			read(fd1[0], &col_gold, sizeof(col_gold));
-			printf("Col_gold: %d\n", col_gold);
 			gold_mine-=col_gold;
 			printf("Золото осталось: %d\n", gold_mine);
 		}
