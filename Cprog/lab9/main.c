@@ -90,7 +90,11 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t* pid_file, 
 			exit(1);
 		}
 		fclose(file);
-		strcat(dir_name, "/");
+		int dir_name_len=strlen(dir_name);
+		if(dir_name[dir_name_len-1]!='/')
+		{
+			strcat(dir_name, "/");
+		}
 		strcat(dir_name, file_name);
 		printf("Процесс %d начинает обработку файла %s\n",getpid(), dir_name);
 		if((file=fopen(dir_name, "r"))==NULL)
