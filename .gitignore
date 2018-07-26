@@ -10,3 +10,4 @@ mycrontab
 *.log
 .config.*
 game_fild
+main.sh.log
