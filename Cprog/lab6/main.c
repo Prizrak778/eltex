@@ -15,7 +15,7 @@ void work(int gold_mine, int col_get_mine)
 		printf("Process %d: Время сна %d\n", getpid(), sleep_time);
 		sleep(sleep_time);
 	}
-	printf("Process %d: GET OUT IN THE CHOPEER!!!!\n", getpid());
+	printf("Process %d: Золото в шахте кончилось\n", getpid());
 	exit(getpid());
 }
 
@@ -27,7 +27,7 @@ int main()
 	int col_work;
 	int gold_mine;
 	int col_get_mine;
-	printf("Введите количество балбесов собирающие золото в шахте\n");
+	printf("Введите количество шахтёров собирающие золото в шахте\n");
 	scanf("%d", &col_work);
 	printf("Введите сколько они золота буду брать\n");
 	scanf("%d", &col_get_mine);
