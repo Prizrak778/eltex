@@ -111,12 +111,18 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t* pid_file, 
 
 int input(char *dir_name)
 {
-	char dir_name_this[MAX_LEN];
-	char commad_line[]={"ls -p -a "};
+	//char dir_name_this[MAX_LEN];
+	const char dir_name_this[1024]="/home/ghost/eltex/Bashprog/lab2";
+	char commad_line[1024]="ls -p -a ";
 	printf("Введите имя папки в которой хотите провести подсчёт\n");
-	scanf("%s", dir_name_this);
+	//scanf("%s", dir_name_this);
+	printf("%s\n", dir_name_this);
+	printf("%s\n", commad_line);
 	strcpy(dir_name, dir_name_this);
+	//strcat(commad_line, "/home/ghost/eltex/Cprog/lab9");
 	strcat(commad_line, dir_name_this);
+	printf("%s\n", commad_line);
+	printf("%s\n", dir_name_this);
 	strcat(commad_line, "|grep -v / >.temp.txt");
 	if(system(commad_line)!=0)
 	{

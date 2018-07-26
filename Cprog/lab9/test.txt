@@ -1,1 +1,1 @@
-/home/ghost
+/home/ghost/eltex/Cprog/lab9
