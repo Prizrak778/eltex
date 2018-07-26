@@ -2,6 +2,11 @@
 #include <stdlib.h>
 #include <dlfcn.h>
 
+#define MAX_LEN 50
+#define DIVIDE_NUM 5
+#define str1_origin "1234"
+#define str2_origin "qwerty"
+
 
 int main()
 {
@@ -19,11 +24,11 @@ int main()
 		printf("dlsym() error : %s\n", dlerror());
 		exit(1);
 	}
-	char str1[50];
-	char str2[50];
-	int get_num=5;
-	printf("Начальные данные:\n str1=1234, str2=qwerty, позийция для разделения 5\n");
-	union_str("1234", "qwerty", str2);
+	char str1[MAX_LEN];
+	char str2[MAX_LEN];
+	int get_num=DIVIDE_NUM;
+	printf("Начальные данные:\n str1=%s, str2=%s, позийция для разделения %d\n", str1_origin, str2_origin, DIVIDE_NUM);
+	union_str(str1_origin, str2_origin, str2);
 	printf("union_func :str2=%s\n", str2);
 	divide_str(str2, get_num, str1);
 	printf("divide_func: str1 = %s, str2 = %s\n", str1, str2);

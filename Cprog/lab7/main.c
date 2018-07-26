@@ -25,7 +25,6 @@ void work(int gold_mine, int col_get_mine, pid_t pid_mine)
 			printf("Золото осталось: %d\n", gold_mine);
 		}
 		printf("Шахта рухнула\n");
-		printf("GET OUT IN THE CHOPPER!!!\n");
 		exit(pid_mine);
 	}
 	else

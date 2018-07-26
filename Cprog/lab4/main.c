@@ -1,14 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #define MAX_LEN 1024
+#define FILE_TEMPLATE ".t1"
+#define FILE_FIND ".txt"
+
 
 void check(FILE *file, char file_name[], int col_number)
 {
 	char input_str[MAX_LEN];
 	char *str_without_num;
 	char number_str[]="1234567890";
-	strcat(file_name, ".t1");
+	strcat(file_name, FILE_TEMPLATE);
 	FILE *file_out = fopen(file_name, "w");
 	int col_f_number=0;
 	while(!feof(file))
@@ -43,7 +47,7 @@ FILE *input(int argc, char **argv, int *col_number)
 	}
 	char file_name[MAX_LEN];
 	strcpy(file_name, argv[1]);
-	strcat(file_name, ".txt");
+	strcat(file_name, FILE_FIND);
 	if((file=fopen(file_name, "r"))==NULL)
 	{
 		printf("Неудалось открыть файл\n");

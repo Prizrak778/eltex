@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mcheck.h>
+#define MAX_LEN 1024
+
 int input(char ***mass_char, int *col_str)
 {
-	char str[1024];
+	char str[MAX_LEN];
 	printf("Введите кол строк\n");
 	scanf("%d", col_str);
 	(*mass_char) = (char **) malloc((*col_str)*sizeof(char*));
@@ -31,7 +33,7 @@ int input(char ***mass_char, int *col_str)
 }
 int Len_first_w(char *mass_char, int *max_len)
 {
-	char str[1024];
+	char str[MAX_LEN];
 	int col = strlen(mass_char);
 	strcpy(str, mass_char);
 	char *str_now = strtok(str, " .,?!");
@@ -77,7 +79,7 @@ int sort_first_word(char ***mass_char, int *max_len, int *col_swap, int col_str)
 				(*mass_char)[i]=(*mass_char)[i+1];
 				(*mass_char)[i+1] = str;
 				k = 0;
-				(*col_swap)++;		
+				(*col_swap)++;
 			}
 		}
 	}
@@ -99,6 +101,6 @@ int main()
 		printf("Количество перестановок %d\n", col_swap);
 		printf("Максимальная длина слова %d\n", max_len);
 	}
-	free(mass_char);	
+	free(mass_char);
 	return 0;
 }

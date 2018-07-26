@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define MAX_LEN 50
 
 struct sportman
 {
-	char surname[50];
-	char name_sport[50];
+	char surname[MAX_LEN];
+	char name_sport[MAX_LEN];
 	int col_medal;
 };
 

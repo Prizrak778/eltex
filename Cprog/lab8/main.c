@@ -240,16 +240,11 @@ int main()
 	struct msg_buf msg_text;
 	int msgqid;
 	int max_step;
-	key_t keymsg=ftok("a.txt", 'a');
-	if((msgqid = msgget(keymsg, IPC_CREAT | IPC_EXCL | 0666))==-1)
+	key_t keymsg=ftok(".", 'a');
+	
+	if((msgqid=(msgget(keymsg, IPC_CREAT|IPC_EXCL|0666))) <0)
 	{
-		if(errno == EEXIST)
-		{
-			msgqid = msgget(keymsg, 0);
-		}
-	}
-	if(msgqid == -1)
-	{
+		printf("Очередь с таким ключём не может быть создана\n");
 		return 1;
 	}
 	printf("Введите количество балбесов игры\n");
@@ -258,6 +253,7 @@ int main()
 	scanf("%d", &size_fild);
 	printf("Введите максимальное количество ходов, которое смогут сделать игроки\n");
 	scanf("%d", &max_step);
+	
 	pid_t pid_fild=fork();
 	if(pid_fild == -1)
 	{

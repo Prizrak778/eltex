@@ -1,12 +1,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
 #define MAX_LEN 1024
+#define FILE_TEMPLATE ".t2"
 
 void check(FILE *file, char file_name[], int col_puts)
 {
 	char input_str[MAX_LEN];
-	strcat(file_name, ".t2");
+	strcat(file_name, FILE_TEMPLATE);
 	FILE *file_out = fopen(file_name, "w");
 	int str_len;
 	while(!feof(file))
@@ -45,7 +47,7 @@ FILE *input(int argc, char **argv, int *col_puts)
 	strcat(file_name, ".txt");
 	if((file=fopen(file_name, "r"))==NULL)
 	{
-		printf("FUCK YOU!\n");
+		printf("File dont open!\n");
 		exit(1);
 	}
 	*col_puts=atoi(argv[2]);
