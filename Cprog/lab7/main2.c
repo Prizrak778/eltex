@@ -28,7 +28,6 @@ void work(int gold_mine, int col_get_mine, pid_t pid_mine)
 			close(readfd);
 		}
 		printf("Шахта рухнула\n");
-		printf("GET OUT IN THE CHOPPER!!!\n");
 		exit(getpid());
 	}
 	else
