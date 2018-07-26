@@ -9,7 +9,7 @@
 #include <wait.h>
 #include <signal.h>
 
-//Вариант 7
+//Вариант 10
 #define RAND_FOR_INIT_COL 50
 #define RAND_FOR_MINUS_COL 20
 #define RAND_FOR_PLUS_COL 5
