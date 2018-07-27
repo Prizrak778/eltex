@@ -21,59 +21,90 @@ struct {
 } shared = {
 	PTHREAD_MUTEX_INITIALIZER
 };
-
-
-void *thread_func(void *arg)
+int size_fild;
+void input(int *targets)
 {
-	shared.minus_col_people=0;
-	shared.col_command=0;
-	int col_people_command=rand()%RAND_FOR_INIT_COL;
-	int flag=0;
-	printf("col_command = %d\n", (*(int *)arg));
-	sleep(1);
-	while(col_people_command>0&&(!flag))
+	printf("Введите размер карты(квадратная)\n");
+	scanf("%d", &size_fild);
+	printf("Введите количество разведчиков\n");
+	scanf("%d", targets);
+}
+
+void init_map(int map[size_fild][size_fild])
+{
+	int targets=rand()%(size_fild*size_fild);
+	printf("%d\n", size_fild);
+	for (int i = 0; i < size_fild; i++)
 	{
-		pthread_mutex_lock(&shared.mutex);
-		col_people_command-=shared.minus_col_people;
-		shared.minus_col_people=rand()%RAND_FOR_MINUS_COL;
-		if((*(int *)arg)==shared.col_command+1)
+		for(int j = 0; j < size_fild; j++)
 		{
-			flag=1;
+			map[i][j]=0;
 		}
-		pthread_mutex_unlock(&shared.mutex);
-		col_people_command+=rand()%RAND_FOR_PLUS_COL;
-		printf("Количество человек в комманде %d, комманда %d\n", col_people_command, pthread_self());
-		sleep(1);
 	}
-	pthread_mutex_lock(&shared.mutex);
-	shared.col_command++;
-	pthread_mutex_unlock(&shared.mutex);
+	printf("1\n");
+	int x;
+    int y;
+	for (int k = 0; k < targets; k++)
+	{
+		x = rand()%size_fild;
+		y = rand()%size_fild;
+		map[x][y]++;
+	}
+	//system("clear");
+	printf("Карта без разведчиков\n");
+	for (int i = 0; i < size_fild; i++)
+	{
+		for(int j = 0; j < size_fild; j++)
+		{
+			printf("%d ", map[i][j]);
+		}
+		printf("\n");
+	}
+	sleep(1);
+}
+
+void *thread_func_scaut(void *arg)
+{
+	return arg;
+}
+
+void *thread_func_map(void *arg)
+{
+	int size_fild=*((int *) arg);
+	int map[size_fild][size_fild];
+	init_map(map);
 	return arg;
 }
 
 int main()
 {
-	int col_command;
+	//system("clear");
+	int scouts;
 	int result;
-	printf("Введите количество команд\n");
-	scanf("%d", &col_command);
-	pthread_t pthread_command[col_command];
-	void *status[col_command];
-	int id_pthread[col_command];
-	int id;
-	for(int i=0;i<col_command;i++)
+	input(&scouts);
+	pthread_t pthread_scout[scouts];
+	pthread_t pthread_map;
+	void *status[scouts];
+	void *status_map;
+	int id_pthread[scouts];
+	result=pthread_create(&pthread_map, NULL, thread_func_map, &size_fild);
+	if(result != 0)
 	{
-		result=pthread_create(&pthread_command[i],NULL, thread_func, &col_command);
+		perror("Создание треда карты не удалось\n");
+		return EXIT_FAILURE;
+	}
+	for(int i=0;i<size_fild;i++)
+	{
+		result=pthread_create(&pthread_scout[i], NULL, thread_func_scaut, &size_fild);
 		if(result != 0)
 		{
 			perror("Создание треда не удалось\n");
 			return EXIT_FAILURE;
 		}
 	}
-	for(int i=0;i<col_command; i++)
+	for(int i=0;i<size_fild; i++)
 	{
-		id=i;
-		result=pthread_join(pthread_command[i], &status[i]);
+		result=pthread_join(pthread_scout[i], &status[i]);
 		if(result != 0)
 		{
 			perror("Вход в тред не удалось\n");
@@ -83,6 +114,16 @@ int main()
 		{
 			printf("В тред было передано %d\n",*((int *)status[i]));
 		}
+	}
+	result=pthread_join(pthread_map, &status_map);
+	if(result != 0)
+	{
+		perror("Вход в тред не удалось\n");
+		return EXIT_FAILURE;
+	}
+	else
+	{
+		printf("В тред карты было передано %d\n",*((int *)status_map));
 	}
 	printf("Done\n");
 	return EXIT_SUCCESS;
