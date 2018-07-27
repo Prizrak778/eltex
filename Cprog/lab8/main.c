@@ -110,6 +110,7 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 			for(int i = 0; i < col_gamers; i++)
 			{
 				msgrcv(msgqid, &msg_text, lenght, type, 0);
+				kill(msg_text.pid_gamers, SIGCONT);
 				for(int j=0; j<col_gamers; j++)
 				{
 					if(status_gamers[j][3]==msg_text.pid_gamers)
@@ -174,6 +175,11 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 					}
 					if(flag_end==col_gamers-1)
 					{
+						
+						for(int i=0; i<col_gamers; i++)
+						{
+							kill(status_gamers[i][3], SIGKILL);
+						}
 						exit(getpid());
 					}
 				}
@@ -225,6 +231,7 @@ void game_fild(pid_t *pid_gamers, struct msg_buf msg_text, int col_gamers, int s
 			{
 				printf("Ошибка при передаче даннных у процесса %d\n", getpid());
 			}
+			kill(getpid(), SIGSTOP);
 			msgctl(msgqid, IPC_STAT, &info);
 		}
 	}
