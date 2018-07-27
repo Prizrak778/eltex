@@ -116,7 +116,7 @@ void control_sum(pid_t pid_distr_file, int *shm, int col_file, pid_t* pid_file, 
 int input(char *dir_name)
 {
 	char dir_name_this[MAX_LEN];
-	char commad_line[]={"ls -p -a "};
+	char commad_line[MAX_LEN]={'l','s',' ','-','p',' ', '-', 'a', ' '};
 	printf("Введите имя папки в которой хотите провести подсчёт\n");
 	scanf("%s", dir_name_this);
 	strcpy(dir_name, dir_name_this);
