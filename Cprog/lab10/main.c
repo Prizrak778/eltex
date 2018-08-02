@@ -8,20 +8,38 @@
 #include <fcntl.h>
 #include <wait.h>
 #include <signal.h>
+#include <time.h>
+#include <math.h>
 
 //Вариант 10
-#define RAND_FOR_INIT_COL 50
-#define RAND_FOR_MINUS_COL 20
-#define RAND_FOR_PLUS_COL 5
 
 struct {
 	pthread_mutex_t mutex;
-	int minus_col_people;
-	int col_command;
+	int x;
+	int y;
+	pthread_t pthread_scout;
+	int step;
+	int flag_end;
 } shared = {
 	PTHREAD_MUTEX_INITIALIZER
 };
+
 int size_fild;
+
+struct DATA
+{
+	int x;
+	int y;
+};
+typedef struct DATA coord_loc;
+
+struct DATA_MAP
+{
+	int size_fild;
+	int scouts;
+};
+typedef struct DATA_MAP data_map;
+
 void input(int *targets)
 {
 	printf("Введите размер карты(квадратная)\n");
@@ -30,7 +48,7 @@ void input(int *targets)
 	scanf("%d", targets);
 }
 
-void init_map(int map[size_fild][size_fild])
+void init_map(int map[size_fild][size_fild], int scouts)
 {
 	int targets=rand()%(size_fild*size_fild);
 	printf("%d\n", size_fild);
@@ -41,7 +59,6 @@ void init_map(int map[size_fild][size_fild])
 			map[i][j]=0;
 		}
 	}
-	printf("1\n");
 	int x;
     int y;
 	for (int k = 0; k < targets; k++)
@@ -51,6 +68,7 @@ void init_map(int map[size_fild][size_fild])
 		map[x][y]++;
 	}
 	//system("clear");
+	sleep(1);
 	printf("Карта без разведчиков\n");
 	for (int i = 0; i < size_fild; i++)
 	{
@@ -60,19 +78,153 @@ void init_map(int map[size_fild][size_fild])
 		}
 		printf("\n");
 	}
-	sleep(1);
+	for(int i = 0; i<scouts; i++)
+	{
+		printf("Разведчик%d -\n", i+1);
+	}
 }
 
-void *thread_func_scaut(void *arg)
+void *thread_func_scout(void *arg)
 {
-	return arg;
+	srand(abs(pthread_self()));
+	coord_loc *start_loc =(coord_loc*)arg;
+	coord_loc end_loc;
+	coord_loc now_loc;
+	if(rand()%2)
+	{
+		end_loc.x=rand()%size_fild;
+		end_loc.y=(rand()%2)*size_fild;
+	}
+	else
+	{
+		end_loc.y=rand()%size_fild;
+		end_loc.x=(rand()%2)*size_fild;
+	}
+	now_loc.x=start_loc->x;
+	now_loc.y=start_loc->y;
+	int len_way = abs(start_loc->x-end_loc.x)+abs(start_loc->y-end_loc.y);
+	int len_x = end_loc.x-start_loc->x;
+	int len_y = end_loc.y-start_loc->y;
+	int flag = 1;
+	for(int i=0; i<len_way; i++)
+	{
+		flag = 1;
+		while(flag)
+		{
+			pthread_mutex_lock(&shared.mutex);
+			if(shared.pthread_scout==0)
+			{
+				shared.pthread_scout=abs(pthread_self());
+				shared.x = now_loc.x;
+				shared.y = now_loc.y;
+				shared.step = i;
+				shared.flag_end = 0;
+				if(i==len_way-1)
+				{
+					shared.flag_end = 1;
+				}
+				flag=0;
+			}
+			pthread_mutex_unlock(&shared.mutex);
+		}
+		if(now_loc.x==end_loc.x)
+		{
+			now_loc.y+=(len_y/abs(len_y));
+		}
+		else
+		{
+			now_loc.x+=(len_x/abs(len_x));
+		}
+	}
+	//printf("x=%d, y=%d, pid=%d\n", start_loc->x, start_loc->y, abs(pthread_self()));
+	//printf("end_x=%d, end_y=%d, pid=%d\n", end_loc.x, end_loc.y, abs(pthread_self()));
+	return pthread_self();
+}
+
+void out_map(int map[size_fild][size_fild], int status_scout[][4], int pthread_scout, int scouts)
+{
+	int num_scout=0;
+	for(int i=0; i < scouts; i++)
+	{
+		if(status_scout[i][0]==pthread_scout)
+		{
+			num_scout=i;
+			break;
+		}
+	}
+	for(int i = 0; i < size_fild; i++)
+	{
+		for(int j = 0; j < size_fild; j++)
+		{
+			if(status_scout[num_scout][1]==i&&status_scout[num_scout][2]==j)
+			{
+				status_scout[num_scout][3]+=map[i][j];
+				printf("* ");
+				map[i][j] = 0;
+			}
+			else
+			{
+				printf("%d ", map[i][j]);
+			}
+		}
+		printf("\n");
+	}
+	for(int i = 0; i < scouts; i++)
+	{
+		printf("Игрок%d x=%d, y=%d, col_target=%d\n", i, status_scout[i][1], status_scout[i][2], status_scout[i][3]);
+	}
 }
 
 void *thread_func_map(void *arg)
 {
-	int size_fild=*((int *) arg);
+	srand(time(NULL));
+	data_map *data_init_map = (data_map *)arg;
+	int size_fild = data_init_map->size_fild;
+	int scouts = data_init_map->scouts;
 	int map[size_fild][size_fild];
-	init_map(map);
+	int status_scout[scouts][4];
+	for(int i = 0; i < scouts; i++)
+	{
+		for(int j = 0; j < 4; j++)
+		{
+			status_scout[i][j]=0;
+		}
+	}
+	init_map(map, scouts);
+	printf("Карта готова\n");
+	int flag_end=scouts;
+	while(flag_end)
+	{
+		pthread_mutex_lock(&shared.mutex);
+		if(shared.pthread_scout!=0)
+		{
+			int flag_new_pth=1;
+			for(int i=0;i<scouts;i++)
+			{
+				if(status_scout[i][0]==shared.pthread_scout)
+				{
+					status_scout[i][1]=shared.x;
+					status_scout[i][2]=shared.y;
+					flag_new_pth=0;
+				}
+			}
+			for(int i=0;i<scouts&&flag_new_pth;i++)
+			{
+				if(status_scout[i][0]==0)
+				{
+					status_scout[i][0]=shared.pthread_scout;
+					status_scout[i][1]=shared.x;
+					status_scout[i][2]=shared.y;
+					flag_new_pth=0;
+				}
+			}
+			flag_end-=shared.flag_end;
+			shared.pthread_scout=0;
+			out_map(map, status_scout, shared.pthread_scout, scouts);
+			sleep(1);
+		}
+		pthread_mutex_unlock(&shared.mutex);
+	}
 	return arg;
 }
 
@@ -84,10 +236,16 @@ int main()
 	input(&scouts);
 	pthread_t pthread_scout[scouts];
 	pthread_t pthread_map;
+	coord_loc start_loc;
+	start_loc.x = rand()%size_fild;
+	start_loc.y = rand()%size_fild;
+	data_map data_init_map;
+	data_init_map.size_fild = size_fild;
+	data_init_map.scouts = scouts;
 	void *status[scouts];
 	void *status_map;
 	int id_pthread[scouts];
-	result=pthread_create(&pthread_map, NULL, thread_func_map, &size_fild);
+	result=pthread_create(&pthread_map, NULL, thread_func_map, &data_init_map);
 	if(result != 0)
 	{
 		perror("Создание треда карты не удалось\n");
@@ -95,7 +253,7 @@ int main()
 	}
 	for(int i=0;i<size_fild;i++)
 	{
-		result=pthread_create(&pthread_scout[i], NULL, thread_func_scaut, &size_fild);
+		result=pthread_create(&pthread_scout[i], NULL, thread_func_scout, &start_loc);
 		if(result != 0)
 		{
 			perror("Создание треда не удалось\n");
@@ -112,7 +270,7 @@ int main()
 		}
 		else
 		{
-			printf("В тред было передано %d\n",*((int *)status[i]));
+			//printf("В тред было передано %d\n",*((int *)status[i]));
 		}
 	}
 	result=pthread_join(pthread_map, &status_map);
