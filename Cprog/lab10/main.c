@@ -106,7 +106,7 @@ void *thread_func_scout(void *arg)
 	int len_x = end_loc.x-start_loc->x;
 	int len_y = end_loc.y-start_loc->y;
 	int flag = 1;
-	for(int i=0; i<len_way; i++)
+	for(int i=0; i<len_way + 1; i++)
 	{
 		flag = 1;
 		while(flag)
@@ -119,7 +119,7 @@ void *thread_func_scout(void *arg)
 				shared.y = now_loc.y;
 				shared.step = i;
 				shared.flag_end = 0;
-				if(i==len_way-1)
+				if(i==len_way)
 				{
 					shared.flag_end = 1;
 				}
@@ -136,8 +136,8 @@ void *thread_func_scout(void *arg)
 			now_loc.x+=(len_x/abs(len_x));
 		}
 	}
-	printf("x=%d, y=%d, pid=%d\n", start_loc->x, start_loc->y, abs(pthread_self()));
-	printf("end_x=%d, end_y=%d, pid=%d\n", end_loc.x, end_loc.y, abs(pthread_self()));
+	//printf("x=%d, y=%d, pid=%d\n", start_loc->x, start_loc->y, abs(pthread_self()));
+	//printf("end_x=%d, end_y=%d, pid=%d\n", end_loc.x, end_loc.y, abs(pthread_self()));
 	return pthread_self();
 }
 
@@ -236,7 +236,7 @@ void *thread_func_map(void *arg)
 			}
 			flag_end-=shared.flag_end;
 			shared.pthread_scout=0;
-			//out_map(map, status_scout, shared.pthread_scout, scouts);
+			out_map(map, status_scout, shared.pthread_scout, scouts);
 			sleep(1);
 		}
 		pthread_mutex_unlock(&shared.mutex);
