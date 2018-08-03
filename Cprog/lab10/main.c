@@ -156,10 +156,18 @@ void out_map(int map[size_fild][size_fild], int status_scout[][4], int pthread_s
 	{
 		for(int j = 0; j < size_fild; j++)
 		{
-			if(status_scout[num_scout][1]==i&&status_scout[num_scout][2]==j)
+			num_scout=-1;
+			for(int k=0;k <scouts; k++)
+			{
+				if(status_scout[k][1]==i&&status_scout[k][2]==j)
+				{
+					num_scout=k;
+				}
+			}
+			if(num_scout!=-1)
 			{
 				status_scout[num_scout][3]+=map[i][j];
-				printf("* ");
+				printf("\033[1;3%dm* \033[0m", num_scout);
 				map[i][j] = 0;
 			}
 			else
@@ -171,7 +179,14 @@ void out_map(int map[size_fild][size_fild], int status_scout[][4], int pthread_s
 	}
 	for(int i = 0; i < scouts; i++)
 	{
-		printf("Игрок%d x=%d, y=%d, col_target=%d\n", i, status_scout[i][1], status_scout[i][2], status_scout[i][3]);
+		if(status_scout[i][0]!=-1)
+		{
+			printf("\033[1;3%dmРазведчик%d\033[0m x=%d, y=%d, col_target=%d\n",i, i, status_scout[i][1], status_scout[i][2], status_scout[i][3]);
+		}
+		else
+		{
+			printf("Разведчтк%d -\n", i);
+		}
 	}
 }
 
@@ -185,10 +200,11 @@ void *thread_func_map(void *arg)
 	int status_scout[scouts][4];
 	for(int i = 0; i < scouts; i++)
 	{
-		for(int j = 0; j < 4; j++)
+		for(int j = 0; j < 3; j++)
 		{
-			status_scout[i][j]=0;
+			status_scout[i][j]=-1;
 		}
+		status_scout[i][4]=0;
 	}
 	init_map(map, scouts);
 	printf("Карта готова\n");
@@ -210,7 +226,7 @@ void *thread_func_map(void *arg)
 			}
 			for(int i=0;i<scouts&&flag_new_pth;i++)
 			{
-				if(status_scout[i][0]==0)
+				if(status_scout[i][0]==-1)
 				{
 					status_scout[i][0]=shared.pthread_scout;
 					status_scout[i][1]=shared.x;
@@ -230,6 +246,7 @@ void *thread_func_map(void *arg)
 
 int main()
 {
+	srand(getpid());
 	//system("clear");
 	int scouts;
 	int result;
