@@ -83,27 +83,18 @@ void init_map(int map[size_fild][size_fild], int scouts)
 	sleep(1);
 }
 
-void next_step(coord_loc *now_loc, coord_loc end_loc, int len_y, int len_x, int flag_step)
+void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY, int *error )
 {
-	if(flag_step)
-		if(now_loc->x==end_loc.x&&len_y!=0)
-		{
-			now_loc->y+=(len_y/abs(len_y));
-		}
-		else
-		{
-			now_loc->x+=(len_x/abs(len_x));
-		}
+	int error2 = *error * 2;
+	if(error2 > -deltaY)
+	{
+		*error -= deltaY;
+		now_loc->x+=signX;
+	}
 	else
 	{
-		if(now_loc->y==end_loc.y&&len_x!=0)
-		{
-			now_loc->x+=(len_x/abs(len_x));
-		}
-		else
-		{
-			now_loc->y+=(len_y/abs(len_y));
-		}
+		*error += deltaX;
+		now_loc->y += signY;
 	}
 }
 
@@ -126,16 +117,12 @@ void *thread_func_scout(void *arg)
 	now_loc.x=start_loc->x;
 	now_loc.y=start_loc->y;
 	int len_way = abs(start_loc->x-end_loc.x)+abs(start_loc->y-end_loc.y);
-	int len_x = end_loc.x-start_loc->x;
-	int len_y = end_loc.y-start_loc->y;
-	//printf("x=%d, y=%d, pid=%d\n", start_loc->x, start_loc->y, abs(pthread_self()));
-	//printf("end_x=%d, end_y=%d, pid=%d\n", end_loc.x, end_loc.y, abs(pthread_self()));
 	int flag = 1;
-	int flag_step = 1;
-	if(end_loc.x == 0 || end_loc.x == size_fild - 1)
-	{
-		flag_step = 0;
-	}
+	int deltaX=abs(end_loc.x-start_loc->x);
+	int deltaY=abs(end_loc.y-start_loc->y);
+	int signX = start_loc->x < end_loc.x ? 1 : -1;
+	int signY = start_loc->y < end_loc.y ? 1 : -1;
+	int error = deltaX - deltaY;
 	for(int i=0; i<len_way + 1; i++)
 	{
 		flag = 1;
@@ -157,7 +144,7 @@ void *thread_func_scout(void *arg)
 			}
 			pthread_mutex_unlock(&shared.mutex);
 		}
-		next_step(&now_loc, end_loc, len_y, len_x, flag_step);
+		next_step(&now_loc, deltaX, deltaY, signX, signY, &error);
 	}
 	return pthread_self();
 }
