@@ -87,18 +87,18 @@ void init_map(int map[size_fild][size_fild], int scouts)
 void *thread_func_scout(void *arg)
 {
 	srand(abs(pthread_self()));
-	coord_loc *start_loc =(coord_loc*)arg;
+	coord_loc *start_loc = (coord_loc*)arg;
 	coord_loc end_loc;
 	coord_loc now_loc;
 	if(rand()%2)
 	{
-		end_loc.x=rand()%size_fild;
-		end_loc.y=(rand()%2)*size_fild;
+		end_loc.x = rand()%size_fild;
+		end_loc.y = (rand()%2)*(size_fild-1);
 	}
 	else
 	{
-		end_loc.y=rand()%size_fild;
-		end_loc.x=(rand()%2)*size_fild;
+		end_loc.y = rand()%size_fild;
+		end_loc.x = (rand()%2)*(size_fild-1);
 	}
 	now_loc.x=start_loc->x;
 	now_loc.y=start_loc->y;
@@ -136,8 +136,8 @@ void *thread_func_scout(void *arg)
 			now_loc.x+=(len_x/abs(len_x));
 		}
 	}
-	//printf("x=%d, y=%d, pid=%d\n", start_loc->x, start_loc->y, abs(pthread_self()));
-	//printf("end_x=%d, end_y=%d, pid=%d\n", end_loc.x, end_loc.y, abs(pthread_self()));
+	printf("x=%d, y=%d, pid=%d\n", start_loc->x, start_loc->y, abs(pthread_self()));
+	printf("end_x=%d, end_y=%d, pid=%d\n", end_loc.x, end_loc.y, abs(pthread_self()));
 	return pthread_self();
 }
 
@@ -236,7 +236,7 @@ void *thread_func_map(void *arg)
 			}
 			flag_end-=shared.flag_end;
 			shared.pthread_scout=0;
-			out_map(map, status_scout, shared.pthread_scout, scouts);
+			//out_map(map, status_scout, shared.pthread_scout, scouts);
 			sleep(1);
 		}
 		pthread_mutex_unlock(&shared.mutex);
@@ -268,7 +268,7 @@ int main()
 		perror("Создание треда карты не удалось\n");
 		return EXIT_FAILURE;
 	}
-	for(int i=0;i<size_fild;i++)
+	for(int i=0;i<scouts;i++)
 	{
 		result=pthread_create(&pthread_scout[i], NULL, thread_func_scout, &start_loc);
 		if(result != 0)
@@ -277,7 +277,7 @@ int main()
 			return EXIT_FAILURE;
 		}
 	}
-	for(int i=0;i<size_fild; i++)
+	for(int i=0;i<scouts; i++)
 	{
 		result=pthread_join(pthread_scout[i], &status[i]);
 		if(result != 0)
