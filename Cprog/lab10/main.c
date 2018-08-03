@@ -17,6 +17,8 @@ struct {
 	pthread_mutex_t mutex;
 	int x;
 	int y;
+	int end_x;
+	int end_y;
 	pthread_t pthread_scout;
 	int step;
 	int flag_end;
@@ -97,6 +99,29 @@ void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY,
 		now_loc->y += signY;
 	}
 }
+void end_loc_init(coord_loc *end_loc, int size_fild)
+{
+	int case_border=rand()%4;
+	switch (case_border)
+	{
+		case 0:
+			end_loc->x = rand()%size_fild;
+			end_loc->y = size_fild-1;
+			break;
+		case 1:
+			end_loc->y = rand()%size_fild;
+			end_loc->x = size_fild-1;
+			break;
+		case 2:
+			end_loc->x = rand()%size_fild;
+			end_loc->y = 0;
+			break;
+		case 3:
+			end_loc->y = rand()%size_fild;
+			end_loc->x = 0;
+			break;
+	} 
+}
 
 void *thread_func_scout(void *arg)
 {
@@ -104,16 +129,8 @@ void *thread_func_scout(void *arg)
 	coord_loc *start_loc = (coord_loc*)arg;
 	coord_loc end_loc;
 	coord_loc now_loc;
-	if(rand()%2)
-	{
-		end_loc.x = rand()%size_fild;
-		end_loc.y = (rand()%2)*(size_fild-1);
-	}
-	else
-	{
-		end_loc.y = rand()%size_fild;
-		end_loc.x = (rand()%2)*(size_fild-1);
-	}
+	end_loc_init(&end_loc, size_fild);
+	
 	now_loc.x=start_loc->x;
 	now_loc.y=start_loc->y;
 	int len_way = abs(start_loc->x-end_loc.x)+abs(start_loc->y-end_loc.y);
@@ -123,6 +140,7 @@ void *thread_func_scout(void *arg)
 	int signX = start_loc->x < end_loc.x ? 1 : -1;
 	int signY = start_loc->y < end_loc.y ? 1 : -1;
 	int error = deltaX - deltaY;
+	//
 	for(int i=0; i<len_way + 1; i++)
 	{
 		flag = 1;
@@ -134,6 +152,8 @@ void *thread_func_scout(void *arg)
 				shared.pthread_scout=abs(pthread_self());
 				shared.x = now_loc.x;
 				shared.y = now_loc.y;
+				shared.end_x = end_loc.x;
+				shared.end_y = end_loc.y;
 				shared.step = i;
 				shared.flag_end = 0;
 				if(i==len_way)
@@ -149,7 +169,7 @@ void *thread_func_scout(void *arg)
 	return pthread_self();
 }
 
-void out_map(int map[size_fild][size_fild], int status_scout[][4], int pthread_scout, int scouts)
+void out_map(int map[size_fild][size_fild], int status_scout[][6], int pthread_scout, int scouts)
 {
 	system("clear");
 	int num_scout=0;
@@ -175,7 +195,7 @@ void out_map(int map[size_fild][size_fild], int status_scout[][4], int pthread_s
 			}
 			if(num_scout!=-1)
 			{
-				status_scout[num_scout][3]+=map[i][j];
+				status_scout[num_scout][5]+=map[i][j];
 				printf("\033[1;3%dm* \033[0m", num_scout);
 				map[i][j] = 0;
 			}
@@ -190,7 +210,7 @@ void out_map(int map[size_fild][size_fild], int status_scout[][4], int pthread_s
 	{
 		if(status_scout[i][0]!=-1)
 		{
-			printf("\033[1;3%dmРазведчик%d\033[0m x=%d, y=%d, col_target=%d\n",i, i, status_scout[i][1], status_scout[i][2], status_scout[i][3]);
+			printf("\033[1;3%dmРазведчик%d\033[0m x=%2d, y=%2d, end_x=%2d, end_y=%2d, col_target=%2d\n",i, i, status_scout[i][1], status_scout[i][2], status_scout[i][3], status_scout[i][4], status_scout[i][5]);
 		}
 		else
 		{
@@ -206,14 +226,14 @@ void *thread_func_map(void *arg)
 	int size_fild = data_init_map->size_fild;
 	int scouts = data_init_map->scouts;
 	int map[size_fild][size_fild];
-	int status_scout[scouts][4];
+	int status_scout[scouts][6];
 	for(int i = 0; i < scouts; i++)
 	{
-		for(int j = 0; j < 3; j++)
+		for(int j = 0; j < 5; j++)
 		{
 			status_scout[i][j]=-1;
 		}
-		status_scout[i][3]=0;
+		status_scout[i][5]=0;
 	}
 	init_map(map, scouts);
 	printf("Карта готова\n");
@@ -230,6 +250,8 @@ void *thread_func_map(void *arg)
 				{
 					status_scout[i][1]=shared.x;
 					status_scout[i][2]=shared.y;
+					status_scout[i][3]=shared.end_x;
+					status_scout[i][4]=shared.end_y;
 					flag_new_pth=0;
 				}
 			}
@@ -240,6 +262,8 @@ void *thread_func_map(void *arg)
 					status_scout[i][0]=shared.pthread_scout;
 					status_scout[i][1]=shared.x;
 					status_scout[i][2]=shared.y;
+					status_scout[i][3]=shared.end_x;
+					status_scout[i][4]=shared.end_y;
 					flag_new_pth=0;
 				}
 			}
@@ -307,7 +331,7 @@ int main()
 	}
 	else
 	{
-		printf("В тред карты было передано %d\n",*((int *)status_map));
+		//printf("В тред карты было передано %d\n",*((int *)status_map));
 	}
 	printf("Done\n");
 	return EXIT_SUCCESS;
