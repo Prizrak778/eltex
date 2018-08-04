@@ -25,6 +25,15 @@ struct {
 } shared = {
 	PTHREAD_MUTEX_INITIALIZER
 };
+struct 
+{
+	pthread_mutex_t mutex;
+	int *x;
+	int *y;
+	int size_mass;
+} shared2 = {
+	PTHREAD_MUTEX_INITIALIZER
+};
 
 int size_fild;
 
@@ -101,26 +110,75 @@ void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY,
 }
 void end_loc_init(coord_loc *end_loc, int size_fild)
 {
-	int case_border=rand()%4;
-	switch (case_border)
+	int flag = 1;
+	while(flag)
 	{
-		case 0:
-			end_loc->x = rand()%size_fild;
-			end_loc->y = size_fild-1;
-			break;
-		case 1:
-			end_loc->y = rand()%size_fild;
-			end_loc->x = size_fild-1;
-			break;
-		case 2:
-			end_loc->x = rand()%size_fild;
-			end_loc->y = 0;
-			break;
-		case 3:
-			end_loc->y = rand()%size_fild;
-			end_loc->x = 0;
-			break;
-	} 
+		int case_border=rand()%4;
+		switch (case_border)
+		{
+			case 0:
+				end_loc->x = rand()%size_fild;
+				end_loc->y = size_fild-1;
+				break;
+			case 1:
+				end_loc->y = rand()%size_fild;
+				end_loc->x = size_fild-1;
+				break;
+			case 2:
+				end_loc->x = rand()%size_fild;
+				end_loc->y = 0;
+				break;
+			case 3:
+				end_loc->y = rand()%size_fild;
+				end_loc->x = 0;
+				break;
+		}
+		pthread_mutex_lock(&shared2.mutex);
+		if(shared2.x==1)
+		{
+			shared2.size_mass=1;
+			shared2.x=malloc(sizeof(int)*shared2.size_mass);
+			shared2.y=malloc(sizeof(int)*shared2.size_mass);
+			shared2.x[0]=end_loc->x;
+			shared2.y[0]=end_loc->y;
+			flag=0;
+		}
+		else
+		{
+			flag=0;
+			int *x_exp=malloc(sizeof(int)*shared2.size_mass+1);
+			int *y_exp=malloc(sizeof(int)*shared2.size_mass+1);
+			for(int i = 0; i<shared2.size_mass; i++)
+			{
+				x_exp[i]=shared2.x[i];
+				y_exp[i]=shared2.y[i];
+				if(x_exp[i]==end_loc->x&&y_exp[i]==end_loc->y)
+				{
+					flag=1;
+				}
+			}
+			if(!flag)
+			{
+				x_exp[shared2.size_mass]=end_loc->x;
+				y_exp[shared2.size_mass]=end_loc->y;
+				free(shared2.x);
+				free(shared2.y);
+				shared2.x=malloc(sizeof(int)*shared2.size_mass+1);
+				shared2.y=malloc(sizeof(int)*shared2.size_mass+1);
+				for(int i = 0; i < shared2.size_mass+1; i++)
+				{
+					shared2.x[i]=x_exp[i];
+					shared2.y[i]=y_exp[i];
+				}
+				shared2.size_mass=shared2.size_mass+1;
+				flag = 0;
+			}
+			free(x_exp);
+			free(y_exp);
+		}
+		pthread_mutex_unlock(&shared2.mutex);
+		sleep(1);
+	}
 }
 
 void *thread_func_scout(void *arg)
@@ -130,7 +188,6 @@ void *thread_func_scout(void *arg)
 	coord_loc end_loc;
 	coord_loc now_loc;
 	end_loc_init(&end_loc, size_fild);
-	
 	now_loc.x=start_loc->x;
 	now_loc.y=start_loc->y;
 	int len_way = abs(start_loc->x-end_loc.x)+abs(start_loc->y-end_loc.y);
@@ -171,7 +228,7 @@ void *thread_func_scout(void *arg)
 
 void out_map(int map[size_fild][size_fild], int status_scout[][6], int pthread_scout, int scouts)
 {
-	system("clear");
+	//system("clear");
 	int num_scout=0;
 	for(int i=0; i < scouts; i++)
 	{
@@ -244,7 +301,7 @@ void *thread_func_map(void *arg)
 		if(shared.pthread_scout!=0)
 		{
 			int flag_new_pth=1;
-			for(int i=0;i<scouts;i++)
+			for(int i=0; i < scouts; i++)
 			{
 				if(status_scout[i][0]==shared.pthread_scout)
 				{
@@ -274,13 +331,19 @@ void *thread_func_map(void *arg)
 		}
 		pthread_mutex_unlock(&shared.mutex);
 	}
+	/*Скауты не знают количество друг друга*/
+	pthread_mutex_lock(&shared2.mutex);
+	free(shared2.x);
+	free(shared2.y);
+	pthread_mutex_unlock(&shared2.mutex);
+	
 	return arg;
 }
 
 int main()
 {
 	srand(getpid());
-	//system("clear");
+	system("clear");
 	int scouts;
 	int result;
 	input(&scouts);
