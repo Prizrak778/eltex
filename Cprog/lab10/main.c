@@ -228,7 +228,7 @@ void *thread_func_scout(void *arg)
 
 void out_map(int map[size_fild][size_fild], int status_scout[][6], int pthread_scout, int scouts)
 {
-	//system("clear");
+	system("clear");
 	int num_scout=0;
 	for(int i=0; i < scouts; i++)
 	{
