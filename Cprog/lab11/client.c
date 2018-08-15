@@ -90,5 +90,6 @@ int main()
 			exit(1);
 		}
 	}
+	close(socket_client);
 	return 0;
 }

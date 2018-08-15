@@ -217,6 +217,8 @@ void *thread_func_map(void *arg)
 
 int main()
 {
+	int socket_client;
+	struct sockaddr_in st_addr;
 	srand(getpid());
 	system("clear");
 	int scouts;
@@ -239,8 +241,16 @@ int main()
 		perror("Создание треда карты не удалось\n");
 		return EXIT_FAILURE;
 	}
+	int check = bind(socket_client, (struct sockaddr *)&st_addr, sizeof(st_addr));
+	if(check<0)
+	{
+		printf("Сервер: ошибка в bind\n");
+		close(socket_client);
+		exit(1);
+	}
 	for(int i = 0; i<scouts; i++)
 	{
+		
 		result = pthread_create(&pthread_scout[i], NULL, thread_func_scout, &start_loc);
 		if(result != 0)
 		{
