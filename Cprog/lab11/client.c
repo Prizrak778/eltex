@@ -12,7 +12,7 @@
 #include <netinet/in.h>
 #define MAX_LEN 1024
 #define port_ser 2524
-#define ip_serv "192.168.0.117"
+#define ip_serv "192.168.0.119"
 
 //Вариант 10
 
@@ -49,7 +49,7 @@ void next_step(data *data_scout)
 
 int main()
 {
-	data data_coord;
+	data *data_scout;
 	srand(abs(getpid()));
 	int socket_client;
 	struct sockaddr_in st_addr;
@@ -64,8 +64,9 @@ int main()
 	st_addr.sin_addr.s_addr = inet_addr(ip_serv);
 	if(connect(socket_client, (struct sockaddr *)&st_addr, sizeof(st_addr))== -1)
 	{
-		printf("Клиент: ошибка присоежинении к серверу\n");
+		printf("Клиент: ошибка присоединении к серверу\n");
 		close(socket_client);
+		sleep(5);
 		exit(1);
 	}
 	printf("Клиент: приконектился к серверу\n");
@@ -73,23 +74,24 @@ int main()
 	int flag_end = 0;
 	while(!flag_end)
 	{
-		if(recv(socket_client, data_scout, (sizeof(data_scout))))
+		if(recv(socket_client, data_scout, sizeof(data_scout), 0) == -1)
 		{
 			printf("Клиент: данные для новых координат не приняты\n");
 			close(socket_client);
 			sleep(5);
 			exit(1);
 		}
-		next_step(&data_scout);
-		flag_end = data_scout.flag_end;
-		if(send(socket_client, data_scout, (sizeof(data_scout))))
+		next_step(data_scout);
+		flag_end = data_scout->flag_end;
+		if(send(socket_client, data_scout, sizeof(data_scout), 0) == -1)
 		{
-			printf("Клиент;новые координаты не отправлены\n");
+			printf("Клиент: новые координаты не отправлены\n");
 			close(socket_client);
 			sleep(5);
 			exit(1);
 		}
 	}
+	sleep(5);
 	close(socket_client);
 	return 0;
 }

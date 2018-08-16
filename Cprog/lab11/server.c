@@ -10,7 +10,7 @@
 #include<wait.h>
 #include<time.h>
 #include<math.h>
-
+#define port_server 2524
 //Вариант 10
 
 struct
@@ -56,6 +56,27 @@ struct DATA_MAP
 };
 typedef struct DATA_MAP data_map;
 
+struct DATA_SCOUT
+{
+	int x;
+	int y;
+	int socket_scout;
+};
+typedef struct DATA_SCOUT data_scout;
+
+struct DATA_SEND
+{
+	int x;
+	int y;
+	int deltaX;
+	int deltaY;
+	int signX;
+	int signY;
+	int error;
+	int flag_end;
+};
+typedef struct DATA_SEND data_send;
+
 void input(int *scouts)
 {
 	printf("Введите размер карты(квадратная)\n");
@@ -64,8 +85,155 @@ void input(int *scouts)
 	scanf("%d", scouts);
 }
 
+void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY, int *error, int socket, int flag_end)
+{
+	data_send *now_send;
+	now_send->x = now_loc->x;
+	now_send->y = now_loc->y;
+	now_send->deltaX = deltaX;
+	now_send->deltaY = deltaY;
+	now_send->signX = signX;
+	now_send->signY = signY;
+	now_send->error = *error;
+	now_send->flag_end = flag_end;
+	if(send(socket, now_send, sizeof(now_send), MSG_WAITALL) == -1)
+	{
+		printf("Сервер: не отправил сообщение\n");
+	}
+	if(recv(socket, now_send, sizeof(now_send), MSG_DONTROUTE))
+	{
+		now_loc->x = now_send->x;
+		now_loc->y = now_send->y;
+		deltaX = now_send->deltaX;
+		deltaY = now_send->deltaY;
+		signX = now_send->signX;
+		signY = now_send->signY;
+		*error = now_send->error;
+	}
+	else
+	{
+		printf("Сервер: ошибка при принятии сообщения\n");
+	}
+}
+
+void end_loc_init(coord_loc *end_loc, int size_fild)
+{
+	int flag = 1;
+	while(flag)
+	{
+		int case_border = rand()%4;
+		switch(case_border)
+		{
+			case 0:
+				end_loc->x = rand() % size_fild;
+				end_loc->y = size_fild - 1;
+				break;
+			case 1:
+				end_loc->y = rand() % size_fild;
+				end_loc->x = size_fild - 1;
+				break;
+			case 2:
+				end_loc->x = rand() % size_fild;
+				end_loc->y = 0;
+				break;
+			case 3:
+				end_loc->y = rand() % size_fild;
+				end_loc->x = 0;
+				break;
+		}
+		pthread_mutex_lock(&shared2.mutex);
+		if(shared2.x == 1)
+		{
+			shared2.size_mass = 1;
+			shared2.x = malloc(sizeof(int) * shared2.size_mass);
+			shared2.y = malloc(sizeof(int) * shared2.size_mass);
+			shared2.x[0] = end_loc->x;
+			shared2.y[0] = end_loc->y;
+			flag = 0;
+		}
+		else
+		{
+			flag = 0;
+			int *x_exp = malloc(sizeof(int) * shared2.size_mass + 1);
+			int *y_exp = malloc(sizeof(int) * shared2.size_mass + 1);
+			for(int i = 0; i < shared2.size_mass; i++)
+			{
+				x_exp[i] = shared2.x[i];
+				y_exp[i] = shared2.y[i];
+				if(x_exp[i] == end_loc->x && y_exp[i] == end_loc->y)
+				{
+					flag = 1;
+				}
+			}
+			if(!flag)
+			{
+				x_exp[shared2.size_mass] = end_loc->x;
+				y_exp[shared2.size_mass] = end_loc->y;
+				free(shared2.x);
+				free(shared2.y);
+				shared2.x = malloc(sizeof(int) * shared2.size_mass + 1);
+				shared2.y = malloc(sizeof(int) * shared2.size_mass + 1);
+				for(int i = 0; i < shared2.size_mass + 1; i++)
+				{
+					shared2.x[i] = x_exp[i];
+					shared2.y[i] = y_exp[i];
+				}
+				shared2.size_mass = shared2.size_mass + 1;
+				flag = 0;
+			}
+			free(x_exp);
+			free(y_exp);
+		}
+		pthread_mutex_unlock(&shared2.mutex);
+		sleep(1);
+	}
+}
+
 void *thread_func_scout(void *arg)
 {
+	srand(abs(pthread_self()));
+	data_scout *data_loc = (data_scout *)arg;
+	coord_loc start_loc;
+	coord_loc end_loc;
+	coord_loc now_loc;
+	end_loc_init(&end_loc, size_fild);
+	start_loc.x = data_loc->x;
+	start_loc.y = data_loc->y;
+	now_loc.x = start_loc.x;
+	now_loc.y = start_loc.y;
+	int socket = data_loc->socket_scout;
+	int len_way = abs(start_loc.x - end_loc.x) + abs(start_loc.y - end_loc.y);
+	int flag = 1;
+	int deltaX = abs(end_loc.x - start_loc.x);
+	int deltaY = abs(end_loc.y - start_loc.y);
+	int signX = start_loc.x < end_loc.x ? 1 : -1;
+	int signY = start_loc.y < end_loc.y ? 1 : -1;
+	int error = deltaX - deltaY;
+	int flag_end = 0;
+	for(int i = 0; i < len_way + 1; i++)
+	{
+		flag = 1;
+		while(flag)
+		{
+			pthread_mutex_lock(&shared.mutex);
+			if(shared.pthread_scout == 0)
+			{
+				shared.pthread_scout=abs(pthread_self());
+				shared.x = now_loc.x;
+				shared.y = now_loc.y;
+				shared.end_x = end_loc.x;
+				shared.end_y = end_loc.y;
+				if(i == len_way)
+				{
+					flag_end = 1;
+					shared.flag_end = flag_end;
+				}
+				flag = 0;
+			}
+			pthread_mutex_unlock(&shared.mutex);
+		}
+		next_step(&now_loc, deltaX, deltaX, signX, signY, &error, socket, flag_end);
+	}
 	return arg;
 }
 
@@ -208,6 +376,7 @@ void *thread_func_map(void *arg)
 		}
 		pthread_mutex_unlock(&shared.mutex);
 	}
+	sleep(1);
 	pthread_mutex_lock(&shared2.mutex);
 	free(shared2.x);
 	free(shared2.y);
@@ -217,48 +386,83 @@ void *thread_func_map(void *arg)
 
 int main()
 {
-	int socket_client;
+	int socket_client, socket_ac;
 	struct sockaddr_in st_addr;
 	srand(getpid());
 	system("clear");
 	int scouts;
+	int error_ac = 0;
 	int result;
 	input(&scouts);
 	pthread_t pthread_scout[scouts];
 	pthread_t pthread_map;
-	coord_loc start_loc;
-	start_loc.x = 1 + rand()%(size_fild-2);
-	start_loc.y = 1 + rand()%(size_fild-2);
+	data_scout start_loc[scouts];
+	for(int i = 0; i < scouts; i++)
+	{
+		start_loc[i].x = 1 + rand() % (size_fild - 2);
+		start_loc[i].y = 1 + rand() % (size_fild - 2);
+	}
 	data_map data_init_map;
-	data_init_map.size_fild = size_fild;
-	data_init_map.scouts = scouts;
 	void *status[scouts];
 	void *status_map;
+	int check;
 	int id_pthread[scouts];
-	result = pthread_create(&pthread_map, NULL, thread_func_map, &data_init_map);
-	if(result != 0)
+	
+	if((socket_client = socket(AF_INET, SOCK_STREAM, 0)) == -1 )
 	{
-		perror("Создание треда карты не удалось\n");
-		return EXIT_FAILURE;
+		printf("Сервер: ошибка при создании сокета\n");
+		close(socket_client);
+		exit(1);
 	}
-	int check = bind(socket_client, (struct sockaddr *)&st_addr, sizeof(st_addr));
-	if(check<0)
+	st_addr.sin_family = AF_INET;
+	st_addr.sin_addr.s_addr=INADDR_ANY;
+	st_addr.sin_port=htons(port_server);
+	if((check = bind(socket_client, (struct sockaddr *)&st_addr, sizeof(st_addr))) == -1)
 	{
 		printf("Сервер: ошибка в bind\n");
 		close(socket_client);
 		exit(1);
 	}
-	for(int i = 0; i<scouts; i++)
+	if(listen(socket_client, 10) == -1)
 	{
-		
-		result = pthread_create(&pthread_scout[i], NULL, thread_func_scout, &start_loc);
-		if(result != 0)
-		{
-			perror("Создание треда не удалось\n");
-			return EXIT_FAILURE;
-		}
+		printf("Ошибка в попытке прослушать порт");
+		close(socket_client);
+		exit(1);
 	}
 	for(int i = 0; i < scouts; i++)
+	{
+		if((socket_ac = accept(socket_client, NULL, NULL)) == -1)
+		{
+			printf("Сервер: аксепт фэйл\n");
+			error_ac++;
+			if(error_ac == scouts - 1)
+			{
+				printf("Сервер: все соединения провалены\n");
+				close(socket_client);
+				exit(EXIT_FAILURE);
+			}
+		}
+		else
+		{
+			start_loc[i].socket_scout = socket_ac;
+			printf("socket_ac = %d\n", socket_ac);
+			result = pthread_create(&pthread_scout[i], NULL, thread_func_scout, &start_loc[i]);
+			if(result != 0)
+			{
+				perror("Создание треда не удалось\n");
+				return EXIT_FAILURE;
+			}
+		}
+	}
+	result = pthread_create(&pthread_map, NULL, thread_func_map, &data_init_map);
+	data_init_map.size_fild = size_fild;
+	data_init_map.scouts = scouts - error_ac;
+	if(result != 0)
+	{
+		perror("Создание треда карты не удалось\n");
+		return EXIT_FAILURE;
+	}
+	for(int i = 0; i < scouts - error_ac; i++)
 	{
 		result = pthread_join(pthread_scout[i], &status[i]);
 		if(result != 0)
