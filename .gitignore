@@ -2,6 +2,8 @@
 main
 main2
 main3
+server
+client
 *.swp
 *.a
 *.so
