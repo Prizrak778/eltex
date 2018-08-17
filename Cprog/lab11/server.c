@@ -302,7 +302,7 @@ void out_map(int map[size_fild][size_fild], int status_scouts[][6], int pthread_
 	{
 		if(status_scouts[i][0]!=-1)
 		{
-			printf("\033[1;3%dmРазведчик%d\033[0m x=%2d, y=%2d, end_x=%2d, end_y=%2d, col_target=%2d\n", i, i, status_scouts[i][1], status_scouts[i][2], status_scouts[i][3], status_scouts[i][4], status_scouts[i][5]);
+			printf("\033[1;3%dmРазведчик%d\033[0m x=%2d, y=%2d, end_x=%2d, end_y=%2d, col_target=%2d\n", i, i, status_scouts[i][2], status_scouts[i][1], status_scouts[i][4], status_scouts[i][3], status_scouts[i][5]);
 		}
 		else
 		{
