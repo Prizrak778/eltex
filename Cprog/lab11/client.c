@@ -1,5 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
 #include <math.h>
@@ -11,8 +9,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #define MAX_LEN 1024
-#define port_ser 2524
-#define ip_serv "192.168.0.119"
+#define port_ser 2525
+#define ip_serv "192.168.0.113"
 
 //Вариант 10
 
@@ -43,8 +41,6 @@ void next_step(data *data_scout)
 		data_scout->y += data_scout->signY;
 	}
 	printf("================\n");
-	printf("Новые координаты для скаута\n");
-	printf("x=%d y=%d\n\n", data_scout->x, data_scout->y);
 }
 
 int main()
@@ -58,6 +54,7 @@ int main()
 		printf("Клиент: не смог создать сокет\n");
 		exit(1);
 	}
+	printf("size = %d\n", sizeof(data));
 	printf("Клиент: создал сокет\n");
 	st_addr.sin_family = AF_INET;
 	st_addr.sin_port = htons(port_ser);
@@ -74,24 +71,32 @@ int main()
 	int flag_end = 0;
 	while(!flag_end)
 	{
-		if(recv(socket_client, data_scout, sizeof(data_scout), 0) == -1)
+		if(recv(socket_client, data_scout, sizeof(data), 0) == -1)
 		{
 			printf("Клиент: данные для новых координат не приняты\n");
 			close(socket_client);
 			sleep(5);
 			exit(1);
 		}
+		printf("Клиент: принял сообщение\n");
+		printf("x=%d, y=%d, deltaX=%d, deltaY=%d, signX=%d, signY=%d, error=%d, flag_end=%d\n", data_scout->x, data_scout->y, data_scout->deltaX, data_scout->deltaY, data_scout->signX, data_scout->signY, data_scout->error, data_scout->flag_end);
 		next_step(data_scout);
+		printf("Новые координаты для скаута\n");
+		printf("x=%d y=%d\n\n", data_scout->x, data_scout->y);
 		flag_end = data_scout->flag_end;
-		if(send(socket_client, data_scout, sizeof(data_scout), 0) == -1)
+		if(!flag_end)
 		{
-			printf("Клиент: новые координаты не отправлены\n");
-			close(socket_client);
-			sleep(5);
-			exit(1);
+			if(send(socket_client, data_scout, sizeof(data), MSG_WAITALL) == -1)
+			{
+				printf("Клиент: новые координаты не отправлены\n");
+				close(socket_client);
+				sleep(5);
+				exit(1);
+			}
 		}
 	}
-	sleep(5);
 	close(socket_client);
+	printf("end\n");
+	sleep(5);
 	return 0;
 }

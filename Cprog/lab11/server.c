@@ -10,7 +10,7 @@
 #include<wait.h>
 #include<time.h>
 #include<math.h>
-#define port_server 2524
+#define port_server 2525
 //Вариант 10
 
 struct
@@ -96,11 +96,11 @@ void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY,
 	now_send->signY = signY;
 	now_send->error = *error;
 	now_send->flag_end = flag_end;
-	if(send(socket, now_send, sizeof(now_send), MSG_WAITALL) == -1)
+	if(send(socket, now_send, sizeof(data_send), MSG_WAITALL) == -1)
 	{
 		printf("Сервер: не отправил сообщение\n");
 	}
-	if(recv(socket, now_send, sizeof(now_send), MSG_DONTROUTE))
+	if(recv(socket, now_send, sizeof(data_send), MSG_DONTROUTE))
 	{
 		now_loc->x = now_send->x;
 		now_loc->y = now_send->y;
@@ -142,48 +142,36 @@ void end_loc_init(coord_loc *end_loc, int size_fild)
 				break;
 		}
 		pthread_mutex_lock(&shared2.mutex);
-		if(shared2.x == 1)
+		flag = 0;
+		int *x_exp = malloc(sizeof(int) * shared2.size_mass + 1);
+		int *y_exp = malloc(sizeof(int) * shared2.size_mass + 1);
+		for(int i = 0; i < shared2.size_mass; i++)
 		{
-			shared2.size_mass = 1;
-			shared2.x = malloc(sizeof(int) * shared2.size_mass);
-			shared2.y = malloc(sizeof(int) * shared2.size_mass);
-			shared2.x[0] = end_loc->x;
-			shared2.y[0] = end_loc->y;
+			x_exp[i] = shared2.x[i];
+			y_exp[i] = shared2.y[i];
+			if(x_exp[i] == end_loc->x && y_exp[i] == end_loc->y)
+			{
+				flag = 1;
+			}
+		}
+		if(!flag)
+		{
+			x_exp[shared2.size_mass] = end_loc->x;
+			y_exp[shared2.size_mass] = end_loc->y;
+			free(shared2.x);
+			free(shared2.y);
+			shared2.x = malloc(sizeof(int) * shared2.size_mass + 1);
+			shared2.y = malloc(sizeof(int) * shared2.size_mass + 1);
+			for(int i = 0; i < shared2.size_mass + 1; i++)
+			{
+				shared2.x[i] = x_exp[i];
+				shared2.y[i] = y_exp[i];
+			}
+			shared2.size_mass = shared2.size_mass + 1;
 			flag = 0;
 		}
-		else
-		{
-			flag = 0;
-			int *x_exp = malloc(sizeof(int) * shared2.size_mass + 1);
-			int *y_exp = malloc(sizeof(int) * shared2.size_mass + 1);
-			for(int i = 0; i < shared2.size_mass; i++)
-			{
-				x_exp[i] = shared2.x[i];
-				y_exp[i] = shared2.y[i];
-				if(x_exp[i] == end_loc->x && y_exp[i] == end_loc->y)
-				{
-					flag = 1;
-				}
-			}
-			if(!flag)
-			{
-				x_exp[shared2.size_mass] = end_loc->x;
-				y_exp[shared2.size_mass] = end_loc->y;
-				free(shared2.x);
-				free(shared2.y);
-				shared2.x = malloc(sizeof(int) * shared2.size_mass + 1);
-				shared2.y = malloc(sizeof(int) * shared2.size_mass + 1);
-				for(int i = 0; i < shared2.size_mass + 1; i++)
-				{
-					shared2.x[i] = x_exp[i];
-					shared2.y[i] = y_exp[i];
-				}
-				shared2.size_mass = shared2.size_mass + 1;
-				flag = 0;
-			}
-			free(x_exp);
-			free(y_exp);
-		}
+		free(x_exp);
+		free(y_exp);
 		pthread_mutex_unlock(&shared2.mutex);
 		sleep(1);
 	}
@@ -223,6 +211,8 @@ void *thread_func_scout(void *arg)
 				shared.y = now_loc.y;
 				shared.end_x = end_loc.x;
 				shared.end_y = end_loc.y;
+				flag_end = 0;
+				shared.flag_end = flag_end;
 				if(i == len_way)
 				{
 					flag_end = 1;
@@ -273,7 +263,7 @@ void init_map(int map[size_fild][size_fild], int scouts)
 
 void out_map(int map[size_fild][size_fild], int status_scouts[][6], int pthread_scout, int scouts)
 {
-	//system("clear");
+	system("clear");
 	int num_scout = 0;
 	for(int i = 0; i < scouts; i++)
 	{
@@ -397,10 +387,11 @@ int main()
 	pthread_t pthread_scout[scouts];
 	pthread_t pthread_map;
 	data_scout start_loc[scouts];
+	int start_x =  1 + rand() % (size_fild - 2), start_y = 1 + rand() % (size_fild - 2);
 	for(int i = 0; i < scouts; i++)
 	{
-		start_loc[i].x = 1 + rand() % (size_fild - 2);
-		start_loc[i].y = 1 + rand() % (size_fild - 2);
+		start_loc[i].x = start_x;
+		start_loc[i].y = start_y;
 	}
 	data_map data_init_map;
 	void *status[scouts];
@@ -445,7 +436,6 @@ int main()
 		else
 		{
 			start_loc[i].socket_scout = socket_ac;
-			printf("socket_ac = %d\n", socket_ac);
 			result = pthread_create(&pthread_scout[i], NULL, thread_func_scout, &start_loc[i]);
 			if(result != 0)
 			{

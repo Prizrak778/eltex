@@ -4,7 +4,6 @@ run : server client
 	xterm ./client &
 	xterm ./client &
 	xterm ./client &
-	xterm ./client &
 server : server.o
 	gcc server.o -Wall -o server -lpthread
 server.o : server.c
