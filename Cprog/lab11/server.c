@@ -224,6 +224,7 @@ void *thread_func_scout(void *arg)
 		}
 		next_step(&now_loc, deltaX, deltaX, signX, signY, &error, socket, flag_end);
 	}
+	close(socket);
 	return arg;
 }
 
@@ -467,6 +468,7 @@ int main()
 		perror("Вход в тред не удалось\n");
 		return EXIT_FAILURE;
 	}
+	close(socket_client);
 	printf("Done\n");
 	return EXIT_SUCCESS;
 }
