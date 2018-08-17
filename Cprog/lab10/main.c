@@ -147,6 +147,7 @@ void end_loc_init(coord_loc *end_loc, int size_fild)
 		{
 			flag=0;
 			int *x_exp=malloc(sizeof(int)*shared2.size_mass+1);
+			printf("size=%d\n", shared2.size_mass);
 			int *y_exp=malloc(sizeof(int)*shared2.size_mass+1);
 			for(int i = 0; i<shared2.size_mass; i++)
 			{
@@ -267,11 +268,11 @@ void out_map(int map[size_fild][size_fild], int status_scout[][6], int pthread_s
 	{
 		if(status_scout[i][0]!=-1)
 		{
-			printf("\033[1;3%dmРазведчик%d\033[0m x=%2d, y=%2d, end_x=%2d, end_y=%2d, col_target=%2d\n",i, i, status_scout[i][1], status_scout[i][2], status_scout[i][3], status_scout[i][4], status_scout[i][5]);
+			printf("\033[1;3%dmРазведчик%d\033[0m x=%2d, y=%2d, end_x=%2d, end_y=%2d, col_target=%2d\n",i, i, status_scout[i][2], status_scout[i][1], status_scout[i][4], status_scout[i][3], status_scout[i][5]);
 		}
 		else
 		{
-			printf("Разведчтк%d -\n", i);
+			printf("Разведчик%d -\n", i);
 		}
 	}
 }
@@ -343,7 +344,7 @@ void *thread_func_map(void *arg)
 int main()
 {
 	srand(getpid());
-	system("clear");
+	//system("clear");
 	int scouts;
 	int result;
 	input(&scouts);
