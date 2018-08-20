@@ -6,7 +6,7 @@
 #include <netinet/in.h>
 #define MAX_LEN 1024
 #define port_ser 2525
-#define ip_serv "192.168.0.113"
+#define ip_serv "192.168.0.118"
 
 //Вариант 10
 
