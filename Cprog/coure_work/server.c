@@ -9,6 +9,7 @@
 #include <time.h>
 
 #define port_server 50000
+#define MAX_COL 50
 
 //server
 struct ThreadArgs
@@ -19,6 +20,14 @@ struct ThreadArgs
 struct DATA_recv
 {
 	int client_v;
+};
+
+struct 
+{
+	char *str[MAX_COL];
+}
+queue = {
+	PTHREADMUTEX_INITIALER
 };
 
 void *Threadclient1(void *arg)
@@ -47,14 +56,19 @@ int main(int argc, char* argv[])
 	int servSock;
 	int clntSock;
 	struct sockaddr_in st_addr;
-	struct ThreadArgs *threadclient;
+	struct ThreadArgs *thread_client, *thread_udp;
 	unsigned short ServPort;
+	//thread_udp = i
 	struct DATA_recv* data_recv = (struct DATA_recv *) malloc(sizeof(struct DATA_recv));
 	//ServPort = atoi(argv[1]);
 	st_addr.sin_family = AF_INET;
 	st_addr.sin_addr.s_addr = INADDR_ANY;
 	st_addr.sin_port = htons(port_server);
 	pthread_t threadID;
+	/*if(pthread_create(&threadID, NULL, Thread_udp, (void *)) == -1)
+	{
+		printf("Сервер: ошибка при создание udp треда\n");
+	}*/
 	if(( servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
 		printf("Сервер: ошибка при создании сокета\n");
@@ -91,7 +105,7 @@ int main(int argc, char* argv[])
 			threadclient -> clntSock = clntSock;
 			if(recv(clntSock, data_recv, sizeof(struct DATA_recv), MSG_DONTROUTE))
 			{
-				printf("recv_data=%d\n", data_recv->client_v);
+				printf("recv_data = %d\n", data_recv->client_v);
 				if(data_recv->client_v == 1)
 				{
 					if(pthread_create(&threadID, NULL, Threadclient1, (void *) threadclient) != 0)

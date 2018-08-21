@@ -21,7 +21,6 @@ int main()
 	int socket_tcp, socket_udp;
 	struct sockaddr_in st_addr_tcp, st_addr_udp;
 	struct DATA_send* data_send = (struct DATA_send *) malloc(sizeof(struct DATA_send));
-	printf("111\n");
 	data_send->client_v = 2;
 	if((socket_tcp = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
