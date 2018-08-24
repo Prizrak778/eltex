@@ -8,7 +8,7 @@
 #include <netinet/in.h>
 
 #define port_ser 50000
-#define ip_serv "192.168.0.118"
+#define ip_serv "192.168.0.104"
 
 //Client v
 struct DATA_send
@@ -31,7 +31,7 @@ int main()
 	printf("Клиент: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_ser);
-	st_addr_tcp.sin_addr.s_addr = inet_addr(ip_serv);
+	st_addr_tcp.sin_addr.s_addr = inet_aton(ip_serv);
 	if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
 	{
 		printf("Клиент: ошибка присоединении к серверу\n");
