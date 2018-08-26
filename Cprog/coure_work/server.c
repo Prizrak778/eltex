@@ -11,7 +11,8 @@
 
 #define port_server 50000
 #define MAX_COL 50
-
+#define MAX_TIME_K 20
+#define MAX_TIME_L 20
 //server
 struct ThreadArgs
 {
@@ -25,6 +26,7 @@ struct DATA_recv
 
 struct 
 {
+	pthread_mutex_t mutex;
 	char *str[MAX_COL];
 	int col_mess;
 }
@@ -43,6 +45,36 @@ void *UDP_SEND(void *arg)
 	{
 		printf("Сервер: udp сокет не работает\n");
 		exit(1);
+	}
+	int time_next_L = 0;
+	int time_next_K = 0;
+	while(1)
+	{
+		if(time()>time_next_L||time()>time_next_K)
+		{
+			pthread_mutex_lock(shared.mutex);
+			if(shared.col_mess < MAX_COL && time() > time_next_L)
+			{
+				time_next_L=time() + rand() % MAX_TIME_L;
+				char wait_mess[]={"Жду сообщений\0"};
+				int size_wait_mess = strlen(wait_mess);
+				if(sendto(socket_udp, wait_mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
+				{
+					printf("Сервер: ошибка при отправке udp ждущего сообщения\n");
+				}
+			}
+			if(shared.col_mess>0&&time()>time_next_K)
+			{
+				time_next_K=time() + rand() % MAX_TIME_K;
+				char mess_present[]={"Есть сообщения\0"};
+				int size_pres_mess = strlen(mess_present);
+				if(sendto(socket_udp, mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
+				{
+					printf("Сервер: ошибка при отправке udp ждущего сообщения\n");
+				}
+			}
+			pthread_mutex_unlock(shared.mutex);
+		}
 	}
 }
 
