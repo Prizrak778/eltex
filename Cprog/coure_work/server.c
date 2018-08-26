@@ -28,11 +28,21 @@ struct
 {
 	pthread_mutex_t mutex;
 	char *str[MAX_COL];
+	int time_work;
+	int len_str;
 	int col_mess;
 }
 queue = {
 	PTHREAD_MUTEX_INITIALIZER
 };
+
+struct DATA
+{
+	int time_work;
+	char *str;
+	int len_str;
+}
+typedef DATA data;
 
 void *UDP_SEND(void *arg)
 {
@@ -60,7 +70,7 @@ void *UDP_SEND(void *arg)
 				int size_wait_mess = strlen(wait_mess);
 				if(sendto(socket_udp, wait_mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
 				{
-					printf("Сервер: ошибка при отправке udp ждущего сообщения\n");
+					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
 				}
 			}
 			if(shared.col_mess>0&&time()>time_next_K)
@@ -70,7 +80,7 @@ void *UDP_SEND(void *arg)
 				int size_pres_mess = strlen(mess_present);
 				if(sendto(socket_udp, mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
 				{
-					printf("Сервер: ошибка при отправке udp ждущего сообщения\n");
+					printf("Сервер: ошибка при отправке udp оповещения ддля 2 типа клиентов\n");
 				}
 			}
 			pthread_mutex_unlock(shared.mutex);
@@ -81,20 +91,39 @@ void *UDP_SEND(void *arg)
 void *Threadclient1(void *arg)
 {
 	int clntSock;
-	//pthread_detach(pthread_self());
+	`pthread_detach(pthread_self());
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
 	printf("Сервер: клиент версии 1 обнаружен, номер сокета = %d\n", clntSock);
 	free(arg);
+	while(1)
+	{
+		data *data_recv;
+		now_recv = (data *)malloc(sizeof(data));
+		if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
+		{
+			pthread_mutex_lock(shared.mutex);
+			shared.str[shared.col_mess] = (char *) malloc(sizeof(char) * data_recv.len_str);
+			strcpy(shared.str[shared.col_mess], data_recv.str);
+			shared.col_mess++;
+			shared.time_work = data_recv.time_work;
+			shared.len_str = data_recv.len_str;
+			pthread_mutex_unlock(shared.mutex);
+		}
+	}
 	return NULL;
 }
 
 void *Threadclient2(void *arg)
 {
 	int clntSock;
-	//pthread_detach(pthread_self());
+	pthread_detach(pthread_self());
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
 	printf("Сервер: клиент версии 1 обнаружен, номер сокета = %d\n", clntSock);
 	free(arg);
+	while(1)
+	{
+		data *now_send
+	}
 	return NULL;
 }
 
