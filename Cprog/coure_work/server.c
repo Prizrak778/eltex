@@ -28,8 +28,8 @@ struct
 {
 	pthread_mutex_t mutex;
 	char *str[MAX_COL];
-	int time_work;
-	int len_str;
+	int time_work[MAX_COL];
+	int len_str[MAX_COL];
 	int col_mess;
 }
 queue = {
@@ -102,13 +102,21 @@ void *Threadclient1(void *arg)
 		if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
 		{
 			pthread_mutex_lock(shared.mutex);
-			shared.str[shared.col_mess] = (char *) malloc(sizeof(char) * data_recv.len_str);
-			strcpy(shared.str[shared.col_mess], data_recv.str);
-			shared.col_mess++;
-			shared.time_work = data_recv.time_work;
-			shared.len_str = data_recv.len_str;
-			pthread_mutex_unlock(shared.mutex);
+			if(shared.col_mess<MAX_COL)
+			{
+				shared.str[shared.col_mess] = (char *) malloc(sizeof(char) * data_recv.len_str);
+				strcpy(shared.str[shared.col_mess], data_recv.str);
+				shared.time_work[shared.col_mess] = data_recv.time_work;
+				shared.len_str[shared.col_mess] = data_recv.len_str;
+				shared.col_mess++;
+				pthread_mutex_unlock(shared.mutex);
+			}
+			else
+			{
+				printf("Сервер: в очереди нет места\n");
+			}
 		}
+		free(now_recv);
 	}
 	return NULL;
 }
@@ -122,7 +130,30 @@ void *Threadclient2(void *arg)
 	free(arg);
 	while(1)
 	{
-		data *now_send
+		data *now_send;
+		pthread_mutex_lock(shared.mutex);
+		if(shrared.col_mess > 0)
+		{
+			now_send = (data *)malloc(sizeof(data));
+			now_send.str = (char *) malloc(sizeof(char)*shared.len_str[0]);
+			strcpy(now_send.str, shared.str[0]);
+			now_send.time_work = shared.time_work[0];
+			now_send.len_str = shared.len_str[0];
+			del_mess();
+		}
+		else
+		{
+			printf("Сервер: в очереди нет сообщений\n");
+		}
+		pthread_mutex_unlock(shared.mutex);
+		if(now_send != NULL)
+		{
+			if(send(clntSock, now_send, sizeof(data), MSG_WAITALL) == -1)
+			{
+				printf("Сервер: не смог отправить сообщение\n");
+			}
+			free(now_send);
+		}
 	}
 	return NULL;
 }
