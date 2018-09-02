@@ -9,6 +9,9 @@
 
 #define port_ser 50000
 #define ip_serv "192.168.0.104"
+#define MAX_TIME_T 20
+#define MAX_SIZE_STR 100
+
 
 //Client v2
 struct DATA_send
@@ -19,40 +22,72 @@ struct DATA_send
 int main()
 {
 	int socket_tcp, socket_udp;
+	int broadcastPermission;
+	char mess_present[]={"Есть сообщения\0"};
+	int recv_StringLen;
 	struct sockaddr_in st_addr_tcp, st_addr_udp;
 	struct DATA_send* data_send = (struct DATA_send *) malloc(sizeof(struct DATA_send));
 	data_send->client_v = 2;
-	if((socket_tcp = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	st_addr_udp.sin_family = AF_INET;
+	st_addr_udp.sin_addr.s_addr = htonl(INADDR_ANY);
+	st_addr_udp.sin_port = htons(port_serv + 1);
+	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
-		printf("Клиент: не смог создать сокет\n");
-		sleep(5);
-		exit(1);
+		printf("Клиент v2: сокет не получен для udp\n");
 	}
-	printf("Клиент: создал сокет\n");
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *))&broadcastPermission, sizeof(broadcastPermission))
+	{
+		printf("Клиент v2: сокет не смог установить параметры для сокета\n");
+	}
+	if(bind(socket_udp, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) < 0)
+	{
+		printf("Клиент v2: сокет не забиндился для udp\n");
+	}
+	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_ser);
 	st_addr_tcp.sin_addr.s_addr = inet_anot(ip_serv);
-	if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
+	char *recvString;
+	while(1)
 	{
-		printf("Клиент: ошибка присоединении к серверу\n");
-		close(socket_tcp);
-		sleep(5);
-		exit(1);
-	}
-	//Отправить версию клиента по tcp
-	printf("Клиент: приконектился к серверу\n");
-	sleep(5);
-	if(send(socket_tcp, data_send, sizeof(struct DATA_send), MSG_WAITALL) == -1)
-	{
-		printf("Клиент: новые координаты не отправлены\n");
-		close(socket_tcp);
-		sleep(5);
-		exit(1);
+		if(( recv_StringLen = recvfrom(sock, recvString, MAX_SIZE_STR, 0, NULL, 0)) < 0)
+		{
+			printf("Клиент v1: ошибка при получении udp пакета");
+		}
+		if(!strcmp(recvString, mess_present))
+		{
+			if((socket_tcp = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+			{
+				printf("Клиент v2: не смог создать сокет\n");
+				sleep(5);
+				exit(1);
+			}
+			st_addr_tcp.sin_family = AF_INET;
+			st_addr_tcp.sin_port = htons(port_ser);
+			st_addr_tcp.sin_addr.s_addr = inet_anot(ip_serv);
+			if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
+			{
+				printf("Клиент v2: ошибка присоединении к серверу\n");
+				close(socket_tcp);
+				sleep(5);
+				exit(1);
+			}
+			//Отправить версию клиента по tcp
+			printf("Клиент v2: приконектился к серверу\n");
+			if(send(socket_tcp, data_send, sizeof(struct DATA_send), MSG_WAITALL) == -1)
+			{
+				printf("Клиент v2: данные по клиенту не отправлены\n");
+				close(socket_tcp);
+				sleep(5);
+			}
+			close(socket_tcp);
+			printf("Клиент v1: сообщение отправлено\n");
+			int time_T = rand()%MAX_TIME_T;
+			sleep(time_T);
+		}
 	}
 	close(socket_tcp);
-	printf("end\n");
 	free(data_send);
-	sleep(5);
 	return 0;
 }
 
