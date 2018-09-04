@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -36,13 +37,13 @@ int main()
 	{
 		printf("Клиент v1: сокет не получен для udp\n");
 	}
-	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *))&broadcastPermission, sizeof(broadcastPermission))
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0)
 	{
 		printf("Клиент v1: сокет не смог установить параметры для сокета\n");
 	}
 	if(bind(socket_udp, (struct sockaddr *) &st_addr_udp, sizeof(st_addr_udp)) < 0)
 	{
-		printf("Клиент v1: сокет не забиндился для udp\n");`
+		printf("Клиент v1: сокет не забиндился для udp\n");
 	}
 	printf("Клиент v1: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
@@ -51,7 +52,7 @@ int main()
 	char *recvString;
 	while(1)
 	{
-		if((recvStringLen = recvfrom(sock, recvString, MAX_SIZE_STR, 0, NULL, 0 ))<0)
+		if((recvStringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0 ))<0)
 		{
 			printf("Клиент v1: ошибка при получении udp пакета");
 		}

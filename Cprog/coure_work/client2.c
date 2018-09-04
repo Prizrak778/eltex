@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#define port_ser 50000
+#define port_serv 50000
 #define ip_serv "192.168.0.104"
 #define MAX_TIME_T 20
 #define MAX_SIZE_STR 100
@@ -35,7 +36,7 @@ int main()
 	{
 		printf("Клиент v2: сокет не получен для udp\n");
 	}
-	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *))&broadcastPermission, sizeof(broadcastPermission))
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0)
 	{
 		printf("Клиент v2: сокет не смог установить параметры для сокета\n");
 	}
@@ -45,12 +46,12 @@ int main()
 	}
 	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
-	st_addr_tcp.sin_port = htons(port_ser);
-	st_addr_tcp.sin_addr.s_addr = inet_anot(ip_serv);
+	st_addr_tcp.sin_port = htons(port_serv);
+	st_addr_tcp.sin_addr.s_addr = inet_aton(ip_serv);
 	char *recvString;
 	while(1)
 	{
-		if(( recv_StringLen = recvfrom(sock, recvString, MAX_SIZE_STR, 0, NULL, 0)) < 0)
+		if(( recv_StringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0)) < 0)
 		{
 			printf("Клиент v1: ошибка при получении udp пакета");
 		}
@@ -63,8 +64,8 @@ int main()
 				exit(1);
 			}
 			st_addr_tcp.sin_family = AF_INET;
-			st_addr_tcp.sin_port = htons(port_ser);
-			st_addr_tcp.sin_addr.s_addr = inet_anot(ip_serv);
+			st_addr_tcp.sin_port = htons(port_serv);
+			st_addr_tcp.sin_addr.s_addr = inet_aton(ip_serv);
 			if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
 			{
 				printf("Клиент v2: ошибка присоединении к серверу\n");
