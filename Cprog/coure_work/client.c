@@ -46,9 +46,9 @@ int main()
 		printf("Клиент v1: сокет не забиндился для udp\n");
 	}
 	printf("Клиент v1: создал сокет\n");
+	inet_aton(ip_serv, &st_addr_tcp.sin_addr);
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	st_addr_tcp.sin_addr.s_addr = inet_aton(ip_serv);
 	char *recvString;
 	while(1)
 	{

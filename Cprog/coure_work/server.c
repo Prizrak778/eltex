@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <pthread.h>
 #include <sys/stat.h>
@@ -41,15 +42,15 @@ struct DATA
 	int time_work;
 	char *str;
 	int len_str;
-}
-typedef DATA data;
+};
+typedef struct DATA data;
 
 void *UDP_SEND(void *arg)
 {
 	struct sockaddr_in st_addr_udp;
 	int socket_udp;
 	st_addr_udp.sin_family = AF_INET;
-	st_addr_udp.sin_addr.s_addr = inet_aton(arg);
+	inet_aton(arg, &st_addr_udp.sin_addr);
 	st_addr_udp.sin_port = htons(port_server + 1);
 	int broadcastPermission;
 	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -57,7 +58,7 @@ void *UDP_SEND(void *arg)
 		printf("Сервер: udp сокет не работает\n");
 		exit(1);
 	}
-	if(setsockop(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0);
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0);
 	{
 		printf("Сервер: для сокета udp не получилосб задать парамметры ля бродкаста\n");
 	}
@@ -65,12 +66,14 @@ void *UDP_SEND(void *arg)
 	int time_next_K = 0;
 	while(1)
 	{
-		if(time() > time_next_L || time() > time_next_K)
+		int time_now;
+		time(&time_now);
+		if(time_now > time_next_L || time_now > time_next_K)
 		{
-			pthread_mutex_lock(shared.mutex);
-			if(shared.col_mess < MAX_COL && time() > time_next_L)
+			pthread_mutex_lock(&queue.mutex);
+			if(queue.col_mess < MAX_COL && time_now > time_next_L)
 			{
-				time_next_L = time() + rand() % MAX_TIME_L;
+				time_next_L = time_now + rand() % MAX_TIME_L;
 				char wait_mess[] = {"Жду сообщения\0"};
 				int size_wait_mess = strlen(wait_mess) + 1;
 				if(sendto(socket_udp, wait_mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
@@ -78,17 +81,17 @@ void *UDP_SEND(void *arg)
 					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
 				}
 			}
-			if(shared.col_mess > 0 && time() > time_next_K)
+			if(queue.col_mess > 0 && time_now > time_next_K)
 			{
-				time_next_K = time() + rand() % MAX_TIME_K;
+				time_next_K = time_now + rand() % MAX_TIME_K;
 				char mess_present[] = {"Есть сообщения\0"};
 				int size_pres_mess = strlen(mess_present) + 1;
-				if(sendto(socket_udp, mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
+				if(sendto(socket_udp, mess_present, size_pres_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_pres_mess)
 				{
 					printf("Сервер: ошибка при отправке udp оповещения ддля 2 типа клиентов\n");
 				}
 			}
-			pthread_mutex_unlock(shared.mutex);
+			pthread_mutex_unlock(&queue.mutex);
 		}
 	}
 }
@@ -103,37 +106,37 @@ void *Threadclient1(void *arg)
 	while(1)
 	{
 		data *data_recv;
-		now_recv = (data *)malloc(sizeof(data));
+		data_recv = (data *)malloc(sizeof(data));
 		if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
 		{
-			pthread_mutex_lock(shared.mutex);
-			if(shared.col_mess < MAX_COL)
+			pthread_mutex_lock(&queue.mutex);
+			if(queue.col_mess < MAX_COL)
 			{
-				shared.str[shared.col_mess] = (char *) malloc(sizeof(char) * data_recv.len_str);
-				strcpy(shared.str[shared.col_mess], data_recv.str);
-				shared.time_work[shared.col_mess] = data_recv.time_work;
-				shared.len_str[shared.col_mess] = data_recv.len_str;
-				shared.col_mess++;
-				pthread_mutex_unlock(shared.mutex);
+				queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * data_recv->len_str);
+				strcpy(queue.str[queue.col_mess], data_recv->str);
+				queue.time_work[queue.col_mess] = data_recv->time_work;
+				queue.len_str[queue.col_mess] = data_recv->len_str;
+				queue.col_mess++;
 			}
 			else
 			{
 				printf("Сервер: в очереди нет места\n");
 			}
+			pthread_mutex_unlock(&queue.mutex);
 		}
-		free(now_recv);
+		free(data_recv);
 	}
 	return NULL;
 }
 
 void del_mess()
 {
-	for(int i = 0; i < shared.col_mess - 1; i++)
+	for(int i = 0; i < queue.col_mess - 1; i++)
 	{
-		free(shared.str[i]);
-		shared.time_work[i] = shared.time_work[i + 1];
-		shared.len_str[i] = shared.len_str[i + 1];
-		shared.str[i] = shared.str[i + 1];
+		free(queue.str[i]);
+		queue.time_work[i] = queue.time_work[i + 1];
+		queue.len_str[i] = queue.len_str[i + 1];
+		queue.str[i] = queue.str[i + 1];
 	}
 }
 
@@ -147,21 +150,21 @@ void *Threadclient2(void *arg)
 	while(1)
 	{
 		data *now_send;
-		pthread_mutex_lock(shared.mutex);
-		if(shrared.col_mess > 0)
+		pthread_mutex_lock(&queue.mutex);
+		if(queue.col_mess > 0)
 		{
 			now_send = (data *)malloc(sizeof(data));
-			now_send.str = (char *) malloc(sizeof(char) * shared.len_str[0]);
-			strcpy(now_send.str, shared.str[0]);
-			now_send.time_work = shared.time_work[0];
-			now_send.len_str = shared.len_str[0];
+			now_send->str = (char *) malloc(sizeof(char) * queue.len_str[0]);
+			strcpy(now_send->str, queue.str[0]);
+			now_send->time_work = queue.time_work[0];
+			now_send->len_str = queue.len_str[0];
 			del_mess();
 		}
 		else
 		{
 			printf("Сервер: в очереди нет сообщений\n");
 		}
-		pthread_mutex_unlock(shared.mutex);
+		pthread_mutex_unlock(&queue.mutex);
 		if(now_send != NULL)
 		{
 			if(send(clntSock, now_send, sizeof(data), MSG_WAITALL) == -1)
@@ -174,7 +177,7 @@ void *Threadclient2(void *arg)
 	return NULL;
 }
 
-int input(int argc, char argv[], char ip_addr_udp[])
+int input(int argc, char* argv[], char ip_addr_udp[])
 {
 	if(argc == 2)
 	{
@@ -190,7 +193,8 @@ int input(int argc, char argv[], char ip_addr_udp[])
 		printf("Сервер: введите широковещательный адресс для udp\n");
 		scanf("%s", ip_addr_udp);
 	}
-	if(inet_aton(ip_addr_udp) == 0 )
+	struct in_addr in_addr_test;
+	if(inet_aton(ip_addr_udp, &in_addr_test) == 0 )
 	{
 		printf("Сервер: широковещательный IP адресс некоректен\n");
 		exit(1);

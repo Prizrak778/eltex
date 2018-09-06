@@ -47,11 +47,11 @@ int main()
 	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	st_addr_tcp.sin_addr.s_addr = inet_aton(ip_serv);
+	inet_aton(ip_serv, &st_addr_tcp.sin_addr);
 	char *recvString;
 	while(1)
 	{
-		if(( recv_StringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0)) < 0)
+		if((recv_StringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0)) < 0)
 		{
 			printf("Клиент v1: ошибка при получении udp пакета");
 		}
@@ -65,7 +65,7 @@ int main()
 			}
 			st_addr_tcp.sin_family = AF_INET;
 			st_addr_tcp.sin_port = htons(port_serv);
-			st_addr_tcp.sin_addr.s_addr = inet_aton(ip_serv);
+			inet_aton(ip_serv, &st_addr_tcp.sin_addr);
 			if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
 			{
 				printf("Клиент v2: ошибка присоединении к серверу\n");
