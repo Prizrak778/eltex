@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 
 #define port_serv 50000
-#define ip_serv "192.168.0.120"
+#define ip_serv "192.168.0.118"
 #define MAX_TIME_T 20
 #define MAX_SIZE_STR 100
 
@@ -23,7 +23,7 @@ struct DATA_send
 int main()
 {
 	int socket_tcp, socket_udp;
-	int broadcastPermission;
+	int broadcastPermission = 1;
 	char wait_mess[]={"Жду сообщения\0"};
 	int recvStringLen;
 	struct sockaddr_in st_addr_tcp, st_addr_udp;
@@ -49,12 +49,13 @@ int main()
 	inet_aton(ip_serv, &st_addr_tcp.sin_addr);
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	char *recvString;
+	char recvString[MAX_SIZE_STR];
 	while(1)
 	{
+		printf("Клиент v1: ждёт udp сообщения\n");
 		if((recvStringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0 ))<0)
 		{
-			printf("Клиент v1: ошибка при получении udp пакета");
+			printf("Клиент v1: ошибка при получении udp пакета\n");
 		}
 		if(!strcmp(recvString, wait_mess))
 		{
