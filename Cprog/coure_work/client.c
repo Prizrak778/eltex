@@ -9,7 +9,7 @@
 #include <netinet/in.h>
 
 #define port_serv 50000
-#define ip_serv "192.168.0.104"
+#define ip_serv "192.168.0.120"
 #define MAX_TIME_T 20
 #define MAX_SIZE_STR 100
 

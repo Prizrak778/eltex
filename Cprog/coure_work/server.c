@@ -52,20 +52,23 @@ void *UDP_SEND(void *arg)
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(arg, &st_addr_udp.sin_addr);
 	st_addr_udp.sin_port = htons(port_server + 1);
-	int broadcastPermission;
 	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
 		printf("Сервер: udp сокет не работает\n");
 		exit(1);
 	}
-	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0);
+	int broadcastPermission = 1;
+	printf("Сервер: создал сокет для udp\n");
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
 	{
-		printf("Сервер: для сокета udp не получилосб задать парамметры ля бродкаста\n");
+		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
+		exit(1);
 	}
 	int time_next_L = 0;
 	int time_next_K = 0;
 	while(1)
 	{
+		
 		int time_now;
 		time(&time_now);
 		if(time_now > time_next_L || time_now > time_next_K)
@@ -80,6 +83,7 @@ void *UDP_SEND(void *arg)
 				{
 					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
 				}
+				printf("Сервер: отправил udp сообщения клиентам v1\n");
 			}
 			if(queue.col_mess > 0 && time_now > time_next_K)
 			{
@@ -90,6 +94,7 @@ void *UDP_SEND(void *arg)
 				{
 					printf("Сервер: ошибка при отправке udp оповещения ддля 2 типа клиентов\n");
 				}
+				printf("Сервер: отправил udp сообщения клиентам v2\n");
 			}
 			pthread_mutex_unlock(&queue.mutex);
 		}
@@ -242,7 +247,7 @@ int main(int argc, char* argv[])
 		close(servSock);
 		exit(1);
 	}
-	printf("Сервер: сокет прослушывается\n");
+	printf("Сервер: сокет прослушивается\n");
 	while(1)
 	{
 		int size_struct = sizeof(st_addr);
