@@ -9,7 +9,6 @@
 #include <netinet/in.h>
 
 #define port_serv 50000
-#define ip_serv "192.168.0.118"
 #define MAX_TIME_T 20
 #define MAX_SIZE_STR 100
 
@@ -20,12 +19,18 @@ struct DATA_send
 	int client_v;
 };
 
+struct DATA_recv_udp
+{
+	int mess;
+	char ip_addr_udp[16];
+};
+
 int main()
 {
 	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
 	char wait_mess[]={"Жду сообщения\0"};
-	int recvStringLen;
+	int recvLen;
 	struct sockaddr_in st_addr_tcp, st_addr_udp;
 	struct DATA_send *data_send = (struct DATA_send *)malloc(sizeof(struct DATA_send));
 	data_send->client_v = 1;
@@ -46,18 +51,19 @@ int main()
 		printf("Клиент v1: сокет не забиндился для udp\n");
 	}
 	printf("Клиент v1: создал сокет\n");
-	inet_aton(ip_serv, &st_addr_tcp.sin_addr);
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	char recvString[MAX_SIZE_STR];
+	struct DATA_recv_udp *ip_udp;
+	ip_udp = (struct DATA_recv_udp *)malloc(sizeof(struct DATA_recv_udp));
+	int size_send = sizeof(struct DATA_recv_udp);
 	while(1)
 	{
 		printf("Клиент v1: ждёт udp сообщения\n");
-		if((recvStringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0 ))<0)
+		if((recvLen = recvfrom(socket_udp, ip_udp, size_send, 0, NULL, 0 ))<0)
 		{
 			printf("Клиент v1: ошибка при получении udp пакета\n");
 		}
-		if(!strcmp(recvString, wait_mess))
+		if(ip_udp->mess == 1)
 		{
 			if((socket_tcp = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 			{
@@ -65,6 +71,7 @@ int main()
 				sleep(5);
 				exit(1);
 			}
+			inet_aton(ip_udp->ip_addr_udp, &st_addr_tcp.sin_addr);
 			if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
 			{
 				printf("Клиент v1: ошибка присоединении к серверу\n");

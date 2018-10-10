@@ -25,6 +25,18 @@ struct DATA_recv
 	int client_v;
 };
 
+struct DATA_send_udp
+{
+	int mess;
+	char ip_addr_udp[16];
+};
+
+struct DATA_ip
+{
+	char ip_addr_udp[16];
+	char ip_addr_udp_broad[16];
+};
+
 struct 
 {
 	pthread_mutex_t mutex;
@@ -50,7 +62,10 @@ void *UDP_SEND(void *arg)
 	struct sockaddr_in st_addr_udp;
 	int socket_udp;
 	st_addr_udp.sin_family = AF_INET;
-	inet_aton(arg, &st_addr_udp.sin_addr);
+	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
+	printf("ip addr %s\n", ip_udp->ip_addr_udp);
+	printf("ip addr %s\n", ip_udp->ip_addr_udp_broad);
+	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
 	st_addr_udp.sin_port = htons(port_server + 1);
 	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
@@ -77,9 +92,14 @@ void *UDP_SEND(void *arg)
 			if(queue.col_mess < MAX_COL && time_now > time_next_L)
 			{
 				time_next_L = time_now + rand() % MAX_TIME_L;
+				struct DATA_send_udp *send_udp;
+				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
+				send_udp->mess = 1;
+				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
 				char wait_mess[] = {"Жду сообщения\0"};
 				int size_wait_mess = strlen(wait_mess) + 1;
-				if(sendto(socket_udp, wait_mess, size_wait_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_wait_mess)
+				int size_send = sizeof(struct DATA_send_udp);
+				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
 				{
 					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
 				}
@@ -182,35 +202,39 @@ void *Threadclient2(void *arg)
 	return NULL;
 }
 
-int input(int argc, char* argv[], char ip_addr_udp[])
+int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 {
 	if(argc == 2)
 	{
-		strcpy(ip_addr_udp, argv[1]);
+		strcpy(ip_udp->ip_addr_udp, argv[1]);
 	}
-	else if(argc > 3)
+	else if(argc == 1)
+	{
+		printf("Сервер: введите широковещательный адресс для udp\n");
+		scanf("%s", ip_udp->ip_addr_udp);
+	}
+	else
 	{
 		printf("Сервер: cлишком много аргументов\n");
 		exit(1);
 	}
-	else
-	{
-		printf("Сервер: введите широковещательный адресс для udp\n");
-		scanf("%s", ip_addr_udp);
-	}
 	struct in_addr in_addr_test;
-	if(inet_aton(ip_addr_udp, &in_addr_test) == 0 )
+	if(inet_aton(ip_udp->ip_addr_udp, &in_addr_test) == 0 )
 	{
 		printf("Сервер: широковещательный IP адресс некоректен\n");
 		exit(1);
 	}
+	strcpy(ip_udp->ip_addr_udp_broad, ip_udp->ip_addr_udp);
+	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 1]='5';
+	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 2]='5';
+	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 3]='2';
 }
 
 int main(int argc, char* argv[])
 {
 	int servSock;
 	int clntSock;
-	char ip_addr_udp[16];
+	struct DATA_ip ip_udp;
 	struct sockaddr_in st_addr;
 	struct sockaddr_in st_addr_ac;
 	struct ThreadArgs *thread_client, *thread_udp;
@@ -222,8 +246,8 @@ int main(int argc, char* argv[])
 	st_addr.sin_addr.s_addr = INADDR_ANY;
 	st_addr.sin_port = htons(port_server);
 	pthread_t threadID;
-	input(argc, argv, &ip_addr_udp);
-	if(pthread_create(&threadID, NULL, UDP_SEND, (void *)ip_addr_udp) == -1)
+	input(argc, argv, &ip_udp);
+	if(pthread_create(&threadID, NULL, UDP_SEND, &ip_udp) == -1)
 	{
 		printf("Сервер: ошибка при создание udp треда\n");
 	}

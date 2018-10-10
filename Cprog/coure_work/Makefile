@@ -1,5 +1,5 @@
 run : server client client2
-	./server 192.168.0.255 &
+	./server 192.168.43.244 &
 	xterm ./client &
 	xterm ./client2 &
 
