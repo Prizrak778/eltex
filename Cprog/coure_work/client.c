@@ -25,6 +25,25 @@ struct DATA_recv_udp
 	char ip_addr_udp[16];
 };
 
+struct DATA_send_tcp
+{
+	int time_work;
+	char str[MAX_SIZE_STR];
+	int len_str;
+};
+typedef struct DATA_send_tcp data_send_tcp;
+
+void random_string(data_send_tcp *data_string)
+{
+	data_string->time_work = rand()%MAX_TIME_T;
+	data_string->len_str = rand()%MAX_SIZE_STR;
+	for(int i = 0; i < data_string->len_str-1; i++)
+	{
+		data_string->str[i] = '1';
+	}
+	data_string->str[data_string->len_str] = '\0';
+}
+
 int main()
 {
 	int socket_tcp, socket_udp;
@@ -83,6 +102,17 @@ int main()
 			if(send(socket_tcp, data_send, sizeof(struct DATA_send), MSG_WAITALL) == -1)
 			{
 				printf("Клиент v1: данные по клиенту не отправлены\n");
+				close(socket_tcp);
+				sleep(5);
+				exit(1);
+			}
+			data_send_tcp *data_string;
+			data_string = (data_send_tcp *)malloc(sizeof(data_send_tcp));
+			random_string(data_string);
+			printf("%s \n", data_string->str);
+			if(send(socket_tcp, data_string, sizeof(data_send_tcp), MSG_WAITALL) == -1)
+			{
+				printf("Клиент v1: сообщение серверу не отправлен\n");
 				close(socket_tcp);
 				sleep(5);
 				exit(1);

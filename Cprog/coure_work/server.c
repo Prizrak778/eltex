@@ -14,6 +14,7 @@
 #define MAX_COL 50
 #define MAX_TIME_K 20
 #define MAX_TIME_L 20
+#define MAX_STR_LEN 100
 //server
 struct ThreadArgs
 {
@@ -52,7 +53,7 @@ queue = {
 struct DATA
 {
 	int time_work;
-	char *str;
+	char str[MAX_STR_LEN];
 	int len_str;
 };
 typedef struct DATA data;
@@ -63,8 +64,6 @@ void *UDP_SEND(void *arg)
 	int socket_udp;
 	st_addr_udp.sin_family = AF_INET;
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
-	printf("ip addr %s\n", ip_udp->ip_addr_udp);
-	printf("ip addr %s\n", ip_udp->ip_addr_udp_broad);
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
 	st_addr_udp.sin_port = htons(port_server + 1);
 	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -131,29 +130,28 @@ void *Threadclient1(void *arg)
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
 	printf("Сервер: клиент версии 1 обнаружен, номер сокета = %d\n", clntSock);
 	free(arg);
-	while(1)
+	data *data_recv;
+	data_recv = (data *)malloc(sizeof(data));
+	if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
 	{
-		data *data_recv;
-		data_recv = (data *)malloc(sizeof(data));
-		if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
+		printf("Севрер: принял сообщение от клиента v1\n");
+		pthread_mutex_lock(&queue.mutex);
+		if(queue.col_mess < MAX_COL)
 		{
-			pthread_mutex_lock(&queue.mutex);
-			if(queue.col_mess < MAX_COL)
-			{
-				queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * data_recv->len_str);
-				strcpy(queue.str[queue.col_mess], data_recv->str);
-				queue.time_work[queue.col_mess] = data_recv->time_work;
-				queue.len_str[queue.col_mess] = data_recv->len_str;
-				queue.col_mess++;
-			}
-			else
-			{
-				printf("Сервер: в очереди нет места\n");
-			}
-			pthread_mutex_unlock(&queue.mutex);
+			queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * data_recv->len_str);
+			strcpy(queue.str[queue.col_mess], data_recv->str);
+			queue.time_work[queue.col_mess] = data_recv->time_work;
+			queue.len_str[queue.col_mess] = data_recv->len_str;
+			queue.col_mess++;
+			printf("Сервер: в очередь добавлено сообщение\n");
 		}
-		free(data_recv);
+		else
+		{
+			printf("Сервер: в очереди нет места\n");
+		}
+		pthread_mutex_unlock(&queue.mutex);
 	}
+	free(data_recv);
 	return NULL;
 }
 
@@ -175,7 +173,7 @@ void *Threadclient2(void *arg)
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
 	printf("Сервер: клиент версии 1 обнаружен, номер сокета = %d\n", clntSock);
 	free(arg);
-	while(1)
+	/*while(1)
 	{
 		data *now_send;
 		pthread_mutex_lock(&queue.mutex);
@@ -201,7 +199,7 @@ void *Threadclient2(void *arg)
 			}
 			free(now_send);
 		}
-	}
+	}*/
 	return NULL;
 }
 
