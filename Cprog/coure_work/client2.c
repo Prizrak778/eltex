@@ -105,7 +105,14 @@ int main()
 			data_recv_tcp = (data_recv *)malloc(sizeof(data_recv));
 			if(recv(socket_tcp, data_recv_tcp, sizeof(data_recv), MSG_DONTROUTE))
 			{
-				output_recv(data_recv_tcp);
+				if(data_recv_tcp->time_work == -1)
+				{
+					printf("Клиент v2: у сервера не было сообщений\n");
+				}
+				else
+				{
+					output_recv(data_recv_tcp);
+				}
 			}
 			else
 			{

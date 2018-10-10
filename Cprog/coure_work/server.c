@@ -180,9 +180,9 @@ void *Threadclient2(void *arg)
 	free(arg);
 	data *now_send;
 	pthread_mutex_lock(&queue.mutex);
+	now_send = (data *)malloc(sizeof(data));
 	if(queue.col_mess > 0)
 	{
-		now_send = (data *)malloc(sizeof(data));
 		strcpy(now_send->str, queue.str[0]);
 		now_send->time_work = queue.time_work[0];
 		now_send->len_str = queue.len_str[0];
@@ -191,6 +191,7 @@ void *Threadclient2(void *arg)
 	}
 	else
 	{
+		now_send->time_work = -1;
 		printf("Сервер: в очереди нет сообщений\n");
 	}
 	pthread_mutex_unlock(&queue.mutex);

@@ -1,7 +1,11 @@
 run : server client client2
-	xterm ./server &
+	xterm ./client &
+	xterm ./client &
 	xterm ./client &
 	xterm ./client2 &
+	xterm ./client2 &
+	xterm ./client2 &
+	xterm ./server &
 
 server : server.o
 	gcc server.o -Wall -o server -lpthread
