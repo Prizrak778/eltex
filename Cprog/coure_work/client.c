@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #define port_serv 50000
 #define MAX_TIME_T 20
@@ -56,10 +57,14 @@ void random_string(data_send_tcp *data_string)
 		data_string->str[i] = char_ascii;
 	}
 	data_string->str[data_string->len_str] = '\0';
+	printf("Клиент v1: сгенерировал сообещине %s\n", data_string->str);
+	printf("Клиент v1: длина строки %d\n", data_string->len_str);
+	printf("Клиент v1: время обработки %d\n", data_string->time_work);
 }
 
 int main()
 {
+	srand(getpid());
 	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
 	int recvLen;
@@ -123,7 +128,6 @@ int main()
 			data_send_tcp *data_string;
 			data_string = (data_send_tcp *)malloc(sizeof(data_send_tcp));
 			random_string(data_string);
-			printf("%s \n", data_string->str);
 			if(send(socket_tcp, data_string, sizeof(data_send_tcp), MSG_WAITALL) == -1)
 			{
 				printf("Клиент v1: сообщение серверу не отправлен\n");
@@ -133,7 +137,7 @@ int main()
 			}
 			close(socket_tcp);
 			printf("Клиент v1: сообщение отправлено\n");
-			int time_T = rand()%MAX_TIME_T;
+			int time_T = data_string->time_work;
 			sleep(time_T);
 		}
 	}

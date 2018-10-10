@@ -7,11 +7,10 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #define port_serv 50000
-#define ip_serv "192.168.0.118"
-#define MAX_TIME_T 20
-#define MAX_SIZE_STR 100
+#define MAX_STR_LEN 100
 
 
 //Client v2
@@ -25,6 +24,22 @@ struct DATA_recv_udp
 	int mess;
 	char ip_addr_udp[16];
 };
+
+struct DATA
+{
+	int time_work;
+	char str[MAX_STR_LEN];
+	int len_str;
+};
+typedef struct DATA data_recv;
+
+void output_recv(data_recv *data_recv_tcp)
+{
+	printf("Клиент v2: получил сообещние от сервера\n");
+	printf("Клиент v2: время обработки сообщения %d\n", data_recv_tcp->time_work);
+	printf("Клиент v2: длина строки %d\n", data_recv_tcp->len_str);
+	printf("Клиент v2: строка %s\n", data_recv_tcp->str);
+}
 
 int main()
 {
@@ -86,9 +101,19 @@ int main()
 				close(socket_tcp);
 				sleep(5);
 			}
+			data_recv *data_recv_tcp;
+			data_recv_tcp = (data_recv *)malloc(sizeof(data_recv));
+			if(recv(socket_tcp, data_recv_tcp, sizeof(data_recv), MSG_DONTROUTE))
+			{
+				output_recv(data_recv_tcp);
+			}
+			else
+			{
+				printf("Клиент v2: ошибка получения сообщения от сервера\n");
+			}
 			close(socket_tcp);
-			printf("Клиент v2: сообщение отправлено\n");
-			int time_T = rand()%MAX_TIME_T;
+			free(data_recv_tcp);
+			int time_T = data_recv_tcp->time_work;
 			sleep(time_T);
 		}
 	}

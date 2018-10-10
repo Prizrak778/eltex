@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <unistd.h>
 
 #define port_server 50000
 #define MAX_COL 50
@@ -151,6 +152,10 @@ void *Threadclient1(void *arg)
 		}
 		pthread_mutex_unlock(&queue.mutex);
 	}
+	else
+	{
+		printf("Сервер: ошибка получения сообщения от клиента v1\n");
+	}
 	free(data_recv);
 	return NULL;
 }
@@ -159,10 +164,10 @@ void del_mess()
 {
 	for(int i = 0; i < queue.col_mess - 1; i++)
 	{
-		free(queue.str[i]);
 		queue.time_work[i] = queue.time_work[i + 1];
 		queue.len_str[i] = queue.len_str[i + 1];
 		queue.str[i] = queue.str[i + 1];
+		queue.col_mess--;
 	}
 }
 
@@ -171,35 +176,31 @@ void *Threadclient2(void *arg)
 	int clntSock;
 	pthread_detach(pthread_self());
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
-	printf("Сервер: клиент версии 1 обнаружен, номер сокета = %d\n", clntSock);
+	printf("Сервер: клиент версии 2 обнаружен, номер сокета = %d\n", clntSock);
 	free(arg);
-	/*while(1)
+	data *now_send;
+	pthread_mutex_lock(&queue.mutex);
+	if(queue.col_mess > 0)
 	{
-		data *now_send;
-		pthread_mutex_lock(&queue.mutex);
-		if(queue.col_mess > 0)
+		now_send = (data *)malloc(sizeof(data));
+		strcpy(now_send->str, queue.str[0]);
+		now_send->time_work = queue.time_work[0];
+		now_send->len_str = queue.len_str[0];
+		del_mess();
+	}
+	else
+	{
+		printf("Сервер: в очереди нет сообщений\n");
+	}
+	pthread_mutex_unlock(&queue.mutex);
+	if(now_send != NULL)
+	{
+		if(send(clntSock, now_send, sizeof(data), MSG_WAITALL) == -1)
 		{
-			now_send = (data *)malloc(sizeof(data));
-			now_send->str = (char *) malloc(sizeof(char) * queue.len_str[0]);
-			strcpy(now_send->str, queue.str[0]);
-			now_send->time_work = queue.time_work[0];
-			now_send->len_str = queue.len_str[0];
-			del_mess();
+			printf("Сервер: не смог отправить сообщение\n");
 		}
-		else
-		{
-			printf("Сервер: в очереди нет сообщений\n");
-		}
-		pthread_mutex_unlock(&queue.mutex);
-		if(now_send != NULL)
-		{
-			if(send(clntSock, now_send, sizeof(data), MSG_WAITALL) == -1)
-			{
-				printf("Сервер: не смог отправить сообщение\n");
-			}
-			free(now_send);
-		}
-	}*/
+		free(now_send);
+	}
 	return NULL;
 }
 
@@ -211,7 +212,7 @@ int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 	}
 	else if(argc == 1)
 	{
-		printf("Сервер: введите широковещательный адресс для udp\n");
+		printf("Сервер: введите ip адресс для сервера\n");
 		scanf("%s", ip_udp->ip_addr_udp);
 	}
 	else
@@ -222,7 +223,7 @@ int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 	struct in_addr in_addr_test;
 	if(inet_aton(ip_udp->ip_addr_udp, &in_addr_test) == 0 )
 	{
-		printf("Сервер: широковещательный IP адресс некоректен\n");
+		printf("Сервер: IP адресс некоректен\n");
 		exit(1);
 	}
 	strcpy(ip_udp->ip_addr_udp_broad, ip_udp->ip_addr_udp);
