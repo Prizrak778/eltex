@@ -1,8 +1,4 @@
-#include <unistd.h>
 #include <time.h>
-#include <math.h>
-#include <netdb.h>
-#include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -10,7 +6,7 @@
 #include <netinet/in.h>
 #define MAX_LEN 1024
 #define port_ser 2525
-#define ip_serv "192.168.0.113"
+#define ip_serv "192.168.0.118"
 
 //Вариант 10
 

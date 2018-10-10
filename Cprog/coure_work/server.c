@@ -1,0 +1,322 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <time.h>
+#include <unistd.h>
+
+#define port_server 50000
+#define MAX_COL 50
+#define MAX_TIME_K 20
+#define MAX_TIME_L 20
+#define MAX_STR_LEN 100
+//server
+struct ThreadArgs
+{
+	int clntSock;
+};
+
+struct DATA_recv
+{
+	int client_v;
+};
+
+struct DATA_send_udp
+{
+	int mess;
+	char ip_addr_udp[16];
+};
+
+struct DATA_ip
+{
+	char ip_addr_udp[16];
+	char ip_addr_udp_broad[16];
+};
+
+struct 
+{
+	pthread_mutex_t mutex;
+	char *str[MAX_COL];
+	int time_work[MAX_COL];
+	int len_str[MAX_COL];
+	int col_mess;
+}
+queue = {
+	PTHREAD_MUTEX_INITIALIZER
+};
+
+struct DATA
+{
+	int time_work;
+	char str[MAX_STR_LEN];
+	int len_str;
+};
+typedef struct DATA data;
+
+void *UDP_SEND(void *arg)
+{
+	struct sockaddr_in st_addr_udp;
+	int socket_udp;
+	st_addr_udp.sin_family = AF_INET;
+	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
+	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
+	st_addr_udp.sin_port = htons(port_server + 1);
+	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	{
+		printf("Сервер: udp сокет не работает\n");
+		exit(1);
+	}
+	int broadcastPermission = 1;
+	printf("Сервер: создал сокет для udp\n");
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
+	{
+		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
+		exit(1);
+	}
+	int time_next_L = 0;
+	int time_next_K = 0;
+	while(1)
+	{
+		
+		int time_now;
+		time(&time_now);
+		if(time_now > time_next_L || time_now > time_next_K)
+		{
+			pthread_mutex_lock(&queue.mutex);
+			if(queue.col_mess < MAX_COL && time_now > time_next_L)
+			{
+				time_next_L = time_now + rand() % MAX_TIME_L;
+				struct DATA_send_udp *send_udp;
+				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
+				send_udp->mess = 1;
+				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
+				int size_send = sizeof(struct DATA_send_udp);
+				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
+				{
+					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
+				}
+				printf("Сервер: отправил udp сообщения клиентам v1\n");
+				free(send_udp);
+			}
+			if(queue.col_mess > 0 && time_now > time_next_K)
+			{
+				time_next_K = time_now + rand() % MAX_TIME_K;
+				struct DATA_send_udp *send_udp;
+				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
+				send_udp->mess = 2;
+				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
+				int size_send = sizeof(struct DATA_send_udp);
+				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
+				{
+					printf("Сервер: ошибка при отправке udp оповещения ддля 2 типа клиентов\n");
+				}
+				printf("Сервер: отправил udp сообщения клиентам v2\n");
+				free(send_udp);
+			}
+			pthread_mutex_unlock(&queue.mutex);
+		}
+	}
+}
+
+void *Threadclient1(void *arg)
+{
+	int clntSock;
+	pthread_detach(pthread_self());
+	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
+	printf("Сервер: клиент версии 1 обнаружен, номер сокета = %d\n", clntSock);
+	free(arg);
+	data *data_recv;
+	data_recv = (data *)malloc(sizeof(data));
+	if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
+	{
+		printf("Севрер: принял сообщение от клиента v1\n");
+		pthread_mutex_lock(&queue.mutex);
+		if(queue.col_mess < MAX_COL)
+		{
+			queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * data_recv->len_str);
+			strcpy(queue.str[queue.col_mess], data_recv->str);
+			queue.time_work[queue.col_mess] = data_recv->time_work;
+			queue.len_str[queue.col_mess] = data_recv->len_str;
+			queue.col_mess++;
+			printf("Сервер: в очередь добавлено сообщение\n");
+		}
+		else
+		{
+			printf("Сервер: в очереди нет места\n");
+		}
+		pthread_mutex_unlock(&queue.mutex);
+	}
+	else
+	{
+		printf("Сервер: ошибка получения сообщения от клиента v1\n");
+	}
+	free(data_recv);
+	return NULL;
+}
+
+void del_mess()
+{
+	for(int i = 0; i < queue.col_mess - 1; i++)
+	{
+		queue.time_work[i] = queue.time_work[i + 1];
+		queue.len_str[i] = queue.len_str[i + 1];
+		queue.str[i] = queue.str[i + 1];
+	}
+	queue.col_mess--;
+}
+
+void *Threadclient2(void *arg)
+{
+	int clntSock;
+	pthread_detach(pthread_self());
+	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
+	printf("Сервер: клиент версии 2 обнаружен, номер сокета = %d\n", clntSock);
+	free(arg);
+	data *now_send;
+	pthread_mutex_lock(&queue.mutex);
+	now_send = (data *)malloc(sizeof(data));
+	if(queue.col_mess > 0)
+	{
+		strcpy(now_send->str, queue.str[0]);
+		now_send->time_work = queue.time_work[0];
+		now_send->len_str = queue.len_str[0];
+		printf("Сервер: отправляемое сообщение %s\n длина строки %d\n время обработки %d\n", now_send->str, now_send->len_str, now_send->time_work);
+		del_mess();
+	}
+	else
+	{
+		now_send->time_work = -1;
+		printf("Сервер: в очереди нет сообщений\n");
+	}
+	pthread_mutex_unlock(&queue.mutex);
+	if(now_send != NULL)
+	{
+		if(send(clntSock, now_send, sizeof(data), MSG_WAITALL) == -1)
+		{
+			printf("Сервер: не смог отправить сообщение\n");
+		}
+		free(now_send);
+	}
+	return NULL;
+}
+
+int input(int argc, char* argv[], struct DATA_ip *ip_udp)
+{
+	if(argc == 2)
+	{
+		strcpy(ip_udp->ip_addr_udp, argv[1]);
+	}
+	else if(argc == 1)
+	{
+		printf("Сервер: введите ip адресс для сервера\n");
+		scanf("%s", ip_udp->ip_addr_udp);
+	}
+	else
+	{
+		printf("Сервер: cлишком много аргументов\n");
+		exit(1);
+	}
+	struct in_addr in_addr_test;
+	if(inet_aton(ip_udp->ip_addr_udp, &in_addr_test) == 0 )
+	{
+		printf("Сервер: IP адресс некоректен\n");
+		exit(1);
+	}
+	strcpy(ip_udp->ip_addr_udp_broad, ip_udp->ip_addr_udp);
+	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 1]='5';
+	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 2]='5';
+	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 3]='2';
+}
+
+int main(int argc, char* argv[])
+{
+	int servSock;
+	int clntSock;
+	struct DATA_ip ip_udp;
+	struct sockaddr_in st_addr;
+	struct sockaddr_in st_addr_ac;
+	struct ThreadArgs *thread_client, *thread_udp;
+	unsigned short ServPort;
+	//thread_udp = i
+	struct DATA_recv* data_recv = (struct DATA_recv *) malloc(sizeof(struct DATA_recv));
+	//ServPort = atoi(argv[1]);
+	st_addr.sin_family = AF_INET;
+	st_addr.sin_addr.s_addr = INADDR_ANY;
+	st_addr.sin_port = htons(port_server);
+	pthread_t threadID;
+	input(argc, argv, &ip_udp);
+	if(pthread_create(&threadID, NULL, UDP_SEND, &ip_udp) == -1)
+	{
+		printf("Сервер: ошибка при создание udp треда\n");
+	}
+	if(( servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		printf("Сервер: ошибка при создании сокета\n");
+		close(servSock);
+		exit(1);
+	}
+	printf("Сервер: создал сокет\n");
+	if((bind(servSock, (struct sockaddr *)&st_addr, sizeof(st_addr))) == -1)
+	{
+		printf("Сервер: ошибка в bind\n");
+		close(servSock);
+		exit(1);
+	}
+	printf("Сервер: bind прошёл успешно\n");
+	if(listen(servSock, 10) == -1)
+	{
+		printf("Сервер: ошибка в попытке прослушать порт\n");
+		close(servSock);
+		exit(1);
+	}
+	printf("Сервер: сокет прослушивается\n");
+	while(1)
+	{
+		int size_struct = sizeof(st_addr);
+		if((clntSock = accept(servSock, (struct sockaddr *)&st_addr, (socklen_t*)&size_struct)) == -1)
+		//if((clntSock = accept(servSock, NULL, NULL)) == -1)
+		{
+			printf("Сервер: aксепт фэйл\n");
+		}
+		else
+		{
+			printf("Сервер: полученно соединение по адресу %s\n", inet_ntoa(st_addr.sin_addr));
+			if((thread_client = (struct ThreadArgs *) malloc(sizeof(struct ThreadArgs))) == NULL)
+			{
+				printf("Сервер: malloc is fail\n");
+			}
+			thread_client -> clntSock = clntSock;
+			if(recv(clntSock, data_recv, sizeof(struct DATA_recv), MSG_DONTROUTE))
+			{
+				if(data_recv->client_v == 1)
+				{
+					if(pthread_create(&threadID, NULL, Threadclient1, (void *) thread_client) != 0)
+					{
+						printf("Сервер: ошибка при создание треда\n");
+					}
+				}
+				else if(data_recv->client_v == 2)
+				{
+					if(pthread_create(&threadID, NULL, Threadclient2, (void *) thread_client) != 0)
+					{
+						printf("Сервер: ошибка при создание треда\n");
+					}
+				}
+				else
+				{
+					printf("Сервер: клиент не распознан\n");
+				}
+			}
+			else
+			{
+				printf("Сервер: ошибка при принятии сообщения\n");
+			}
+		}
+	}
+}

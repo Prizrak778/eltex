@@ -88,6 +88,7 @@ void input(int *scouts)
 void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY, int *error, int socket, int flag_end)
 {
 	data_send *now_send;
+	now_send = (data_send *) malloc(sizeof(data_send));
 	now_send->x = now_loc->x;
 	now_send->y = now_loc->y;
 	now_send->deltaX = deltaX;
@@ -114,6 +115,7 @@ void next_step(coord_loc *now_loc, int deltaX, int deltaY, int signX, int signY,
 	{
 		printf("Сервер: ошибка при принятии сообщения\n");
 	}
+	free(now_send);
 }
 
 void end_loc_init(coord_loc *end_loc, int size_fild)
