@@ -186,7 +186,6 @@ void *Threadclient2(void *arg)
 		strcpy(now_send->str, queue.str[0]);
 		now_send->time_work = queue.time_work[0];
 		now_send->len_str = queue.len_str[0];
-		printf("Сервер: отправляемое сообщение %s\n длина строки %d\n время обработки %d\n", now_send->str, now_send->len_str, now_send->time_work);
 		del_mess();
 	}
 	else
