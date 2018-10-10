@@ -39,7 +39,21 @@ void random_string(data_send_tcp *data_string)
 	data_string->len_str = rand()%MAX_SIZE_STR;
 	for(int i = 0; i < data_string->len_str-1; i++)
 	{
-		data_string->str[i] = '1';
+		int case_ascii = rand()%3;
+		char char_ascii;
+		if(case_ascii == 0)
+		{
+			char_ascii = 48 + rand()%10;
+		}
+		else if(case_ascii == 1)
+		{
+			char_ascii = 65 + rand()%25;
+		}
+		else if(case_ascii == 2)
+		{
+			char_ascii = 97 + rand()%25;
+		}
+		data_string->str[i] = char_ascii;
 	}
 	data_string->str[data_string->len_str] = '\0';
 }
