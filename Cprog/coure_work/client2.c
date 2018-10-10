@@ -20,12 +20,17 @@ struct DATA_send
 	int client_v;
 };
 
+struct DATA_recv_udp
+{
+	int mess;
+	char ip_addr_udp[16];
+};
+
 int main()
 {
 	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
-	char mess_present[]={"Есть сообщения\0"};
-	int recv_StringLen;
+	int recv_Len;
 	struct sockaddr_in st_addr_tcp, st_addr_udp;
 	struct DATA_send* data_send = (struct DATA_send *) malloc(sizeof(struct DATA_send));
 	data_send->client_v = 2;
@@ -47,16 +52,17 @@ int main()
 	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	inet_aton(ip_serv, &st_addr_tcp.sin_addr);
-	char recvString[MAX_SIZE_STR];
+	struct DATA_recv_udp *ip_udp;
+	ip_udp = (struct DATA_recv_udp *)malloc(sizeof(struct DATA_recv_udp));
+	int size_send = sizeof(struct DATA_recv_udp);
 	while(1)
 	{
 		printf("Клиент v2: ждёт udp сообщения\n");
-		if((recv_StringLen = recvfrom(socket_udp, recvString, MAX_SIZE_STR, 0, NULL, 0)) < 0)
+		if((recv_Len = recvfrom(socket_udp, ip_udp, size_send, 0, NULL, 0)) < 0)
 		{
 			printf("Клиент v1: ошибка при получении udp пакета");
 		}
-		if(!strcmp(recvString, mess_present))
+		if(ip_udp->mess == 2)
 		{
 			if((socket_tcp = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 			{
@@ -64,9 +70,7 @@ int main()
 				sleep(5);
 				exit(1);
 			}
-			st_addr_tcp.sin_family = AF_INET;
-			st_addr_tcp.sin_port = htons(port_serv);
-			inet_aton(ip_serv, &st_addr_tcp.sin_addr);
+			inet_aton(ip_udp->ip_addr_udp, &st_addr_tcp.sin_addr);
 			if(connect(socket_tcp, (struct sockaddr *)&st_addr_tcp, sizeof(st_addr_tcp))== -1)
 			{
 				printf("Клиент v2: ошибка присоединении к серверу\n");

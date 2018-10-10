@@ -29,7 +29,6 @@ int main()
 {
 	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
-	char wait_mess[]={"Жду сообщения\0"};
 	int recvLen;
 	struct sockaddr_in st_addr_tcp, st_addr_udp;
 	struct DATA_send *data_send = (struct DATA_send *)malloc(sizeof(struct DATA_send));

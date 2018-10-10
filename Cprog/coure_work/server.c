@@ -96,25 +96,28 @@ void *UDP_SEND(void *arg)
 				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
 				send_udp->mess = 1;
 				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
-				char wait_mess[] = {"Жду сообщения\0"};
-				int size_wait_mess = strlen(wait_mess) + 1;
 				int size_send = sizeof(struct DATA_send_udp);
 				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
 				{
 					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
 				}
 				printf("Сервер: отправил udp сообщения клиентам v1\n");
+				free(send_udp);
 			}
 			if(queue.col_mess > 0 && time_now > time_next_K)
 			{
 				time_next_K = time_now + rand() % MAX_TIME_K;
-				char mess_present[] = {"Есть сообщения\0"};
-				int size_pres_mess = strlen(mess_present) + 1;
-				if(sendto(socket_udp, mess_present, size_pres_mess, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_pres_mess)
+				struct DATA_send_udp *send_udp;
+				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
+				send_udp->mess = 2;
+				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
+				int size_send = sizeof(struct DATA_send_udp);
+				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
 				{
 					printf("Сервер: ошибка при отправке udp оповещения ддля 2 типа клиентов\n");
 				}
 				printf("Сервер: отправил udp сообщения клиентам v2\n");
+				free(send_udp);
 			}
 			pthread_mutex_unlock(&queue.mutex);
 		}
