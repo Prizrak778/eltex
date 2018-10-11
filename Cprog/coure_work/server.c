@@ -59,27 +59,29 @@ struct DATA
 };
 typedef struct DATA data;
 
-void UDP_socket_int(int *socket_udp, char *ip_addr_udp_board)
+int UDP_socket_int()
 {
-	if((*socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
+	int socket_udp;
+	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
 		printf("Сервер: udp сокет не работает\n");
 		exit(1);
 	}
 	int broadcastPermission = 1;
 	printf("Сервер: создал сокет для udp\n");
-	if(setsockopt(*socket_udp, SOL_SOCKET, SO_BROADCAST | SO_REUSEPORT, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
 	{
 		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
 		exit(1);
 	}
+	return socket_udp;
 }
 
 void *UDP_SEND_client_v1(void *arg)
 {
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
-	int socket_udp;
-	UDP_socket_int(&socket_udp, ip_udp->ip_addr_udp_broad);
+	int socket_udp = UDP_socket_int();
+	printf("Сервер: udp сокет готов %d\n ip addr %s\n", socket_udp, ip_udp->ip_addr_udp_broad);
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
@@ -110,8 +112,8 @@ void *UDP_SEND_client_v1(void *arg)
 void *UDP_SEND_client_v2(void *arg)
 {
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
-	int socket_udp;
-	UDP_socket_int(&socket_udp, ip_udp->ip_addr_udp_broad);
+	int socket_udp = UDP_socket_int();
+	printf("Сервер: udp сокет готов %d\n ip addr %s\n", socket_udp, ip_udp->ip_addr_udp_broad);
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
@@ -136,71 +138,6 @@ void *UDP_SEND_client_v2(void *arg)
 		}
 		pthread_mutex_unlock(&queue.mutex);
 		sleep(rand() % MAX_TIME_L);
-	}
-}
-
-void *UDP_SEND(void *arg)
-{
-	struct sockaddr_in st_addr_udp;
-	int socket_udp;
-	st_addr_udp.sin_family = AF_INET;
-	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
-	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
-	st_addr_udp.sin_port = htons(port_server + 1);
-	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	{
-		printf("Сервер: udp сокет не работает\n");
-		exit(1);
-	}
-	int broadcastPermission = 1;
-	printf("Сервер: создал сокет для udp\n");
-	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
-	{
-		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
-		exit(1);
-	}
-	int time_next_L = 0;
-	int time_next_K = 0;
-	while(1)
-	{
-		
-		int time_now;
-		time(&time_now);
-		if(time_now > time_next_L || time_now > time_next_K)
-		{
-			pthread_mutex_lock(&queue.mutex);
-			if(queue.col_mess < MAX_COL && time_now > time_next_L)
-			{
-				time_next_L = time_now + rand() % MAX_TIME_L;
-				struct DATA_send_udp *send_udp;
-				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
-				send_udp->mess = 1;
-				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
-				int size_send = sizeof(struct DATA_send_udp);
-				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
-				{
-					printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
-				}
-				printf("Сервер: отправил udp сообщения клиентам v1\n");
-				free(send_udp);
-			}
-			if(queue.col_mess > 0 && time_now > time_next_K)
-			{
-				time_next_K = time_now + rand() % MAX_TIME_K;
-				struct DATA_send_udp *send_udp;
-				send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
-				send_udp->mess = 2;
-				strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
-				int size_send = sizeof(struct DATA_send_udp);
-				if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
-				{
-					printf("Сервер: ошибка при отправке udp оповещения ддля 2 типа клиентов\n");
-				}
-				printf("Сервер: отправил udp сообщения клиентам v2\n");
-				free(send_udp);
-			}
-			pthread_mutex_unlock(&queue.mutex);
-		}
 	}
 }
 
@@ -266,7 +203,6 @@ void *Threadclient2(void *arg)
 		strcpy(now_send->str, queue.str[0]);
 		now_send->time_work = queue.time_work[0];
 		now_send->len_str = queue.len_str[0];
-		printf("Сервер: отправляемое сообщение %s\n длина строки %d\n время обработки %d\n", now_send->str, now_send->len_str, now_send->time_work);
 		del_mess();
 	}
 	else
@@ -308,10 +244,15 @@ int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 		printf("Сервер: IP адресс некоректен\n");
 		exit(1);
 	}
+	int i;
+	for(i = strlen(ip_udp->ip_addr_udp); i > 0 && ip_udp->ip_addr_udp[i] != '.'; i--);
+	printf("i = %d\n", i);
 	strcpy(ip_udp->ip_addr_udp_broad, ip_udp->ip_addr_udp);
-	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 1]='5';
-	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 2]='5';
-	ip_udp->ip_addr_udp_broad[strlen(ip_udp->ip_addr_udp) - 3]='2';
+	ip_udp->ip_addr_udp_broad[i + 1]='2';
+	ip_udp->ip_addr_udp_broad[i + 2]='5';
+	ip_udp->ip_addr_udp_broad[i + 3]='5';
+	ip_udp->ip_addr_udp_broad[i + 4]='\0';
+	printf("ip addr %s\n", ip_udp->ip_addr_udp_broad);
 }
 
 int main(int argc, char* argv[])
@@ -331,9 +272,13 @@ int main(int argc, char* argv[])
 	st_addr.sin_port = htons(port_server);
 	pthread_t threadID;
 	input(argc, argv, &ip_udp);
-	if(pthread_create(&threadID, NULL, UDP_SEND, &ip_udp) == -1)
+	if(pthread_create(&threadID, NULL, UDP_SEND_client_v1, &ip_udp) == -1)
 	{
-		printf("Сервер: ошибка при создание udp треда\n");
+		printf("Сервер: ошибка при создание udp треда для клиентов v1\n");
+	}
+	if(pthread_create(&threadID, NULL, UDP_SEND_client_v2, &ip_udp) == -1)
+	{
+		printf("Сервер: ошибка при создание udp треда для клиентов v2\n");
 	}
 	if(( servSock = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	{
