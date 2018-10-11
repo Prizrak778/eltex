@@ -68,7 +68,6 @@ int UDP_socket_int()
 		exit(1);
 	}
 	int broadcastPermission = 1;
-	printf("Сервер: создал сокет для udp\n");
 	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
 	{
 		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
@@ -81,7 +80,7 @@ void *UDP_SEND_client_v1(void *arg)
 {
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
 	int socket_udp = UDP_socket_int();
-	printf("Сервер: udp сокет готов %d\n ip addr %s\n", socket_udp, ip_udp->ip_addr_udp_broad);
+	printf("Сервер: udp сокет готов %d\n", socket_udp);
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
@@ -101,7 +100,10 @@ void *UDP_SEND_client_v1(void *arg)
 			{
 				printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
 			}
-			printf("Сервер: отправил udp сообщения клиентам v1\n");
+			else
+			{
+				printf("Сервер: отправил udp сообщения клиентам v1\n");
+			}
 			free(send_udp);
 		}
 		pthread_mutex_unlock(&queue.mutex);
@@ -113,7 +115,7 @@ void *UDP_SEND_client_v2(void *arg)
 {
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
 	int socket_udp = UDP_socket_int();
-	printf("Сервер: udp сокет готов %d\n ip addr %s\n", socket_udp, ip_udp->ip_addr_udp_broad);
+	printf("Сервер: udp сокет готов %d\n", socket_udp);
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
@@ -133,7 +135,10 @@ void *UDP_SEND_client_v2(void *arg)
 			{
 				printf("Сервер: ошибка при отправке udp оповещения для 2 типа клиентов\n");
 			}
-			printf("Сервер: отправил udp сообщения клиентам v2\n");
+			else
+			{
+				printf("Сервер: отправил udp сообщения клиентам v2\n");
+			}
 			free(send_udp);
 		}
 		pthread_mutex_unlock(&queue.mutex);
@@ -246,13 +251,11 @@ int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 	}
 	int i;
 	for(i = strlen(ip_udp->ip_addr_udp); i > 0 && ip_udp->ip_addr_udp[i] != '.'; i--);
-	printf("i = %d\n", i);
 	strcpy(ip_udp->ip_addr_udp_broad, ip_udp->ip_addr_udp);
 	ip_udp->ip_addr_udp_broad[i + 1]='2';
 	ip_udp->ip_addr_udp_broad[i + 2]='5';
 	ip_udp->ip_addr_udp_broad[i + 3]='5';
 	ip_udp->ip_addr_udp_broad[i + 4]='\0';
-	printf("ip addr %s\n", ip_udp->ip_addr_udp_broad);
 }
 
 int main(int argc, char* argv[])
