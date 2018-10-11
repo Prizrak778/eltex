@@ -73,6 +73,11 @@ int UDP_socket_int()
 		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
 		exit(1);
 	}
+	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
+	{
+		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
+		exit(1);
+	}
 	return socket_udp;
 }
 
