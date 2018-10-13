@@ -1,0 +1,5 @@
+message CMessage {
+	repeated int32 len=1;
+	repeated int32 str=2;
+	repeated int32 time=3;
+}

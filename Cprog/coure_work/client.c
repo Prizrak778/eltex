@@ -8,6 +8,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "cmessage.pb-c.h"
 
 #define port_serv 50000
 #define MAX_TIME_T 20
@@ -64,6 +65,9 @@ void random_string(data_send_tcp *data_string)
 
 int main()
 {
+	CMessage msg = CMESSAGE__INIT;
+	void *buf;
+	int len_buf;
 	srand(getpid());
 	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
@@ -128,13 +132,33 @@ int main()
 			data_send_tcp *data_string;
 			data_string = (data_send_tcp *)malloc(sizeof(data_send_tcp));
 			random_string(data_string);
-			if(send(socket_tcp, data_string, sizeof(data_send_tcp), MSG_WAITALL) == -1)
+			msg.n_len = 1;
+			msg.n_time = 1;
+			msg.n_str = strlen(data_string->str) + 1;
+			msg.len = malloc(sizeof(int) * msg.n_len);
+			msg.time = malloc(sizeof(int) * msg.n_time);
+			msg.str = malloc(sizeof(int) * msg.n_str);
+			msg.len[0] = data_string->len_str;
+			msg.time[0] = data_string->time_work;
+			for(int i = 0; i < msg.n_str; i++)
+			{
+				msg.str[i]=data_string->str[i];
+			}
+			len_buf = cmessage__get_packed_size(&msg);
+			buf = malloc(len_buf);
+			cmessage__pack(&msg, buf);
+			printf("Клиент v1: размер от %d\n", len_buf);
+			if(send(socket_tcp, buf, len_buf, MSG_WAITALL) != len_buf)
 			{
 				printf("Клиент v1: сообщение серверу не отправлен\n");
 				close(socket_tcp);
 				sleep(5);
 				exit(1);
 			}
+			free(msg.len);
+			free(msg.time);
+			free(msg.str);
+			free(buf);
 			close(socket_tcp);
 			printf("Клиент v1: сообщение отправлено\n");
 			int time_T = data_string->time_work;

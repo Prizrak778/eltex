@@ -8,10 +8,11 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include "cmessage.pb-c.h"
 
 #define port_serv 50000
 #define MAX_STR_LEN 100
-
+#define MAX_MSG_SIZE 4096
 
 //Client v2
 struct DATA_send
@@ -43,6 +44,9 @@ void output_recv(data_recv *data_recv_tcp)
 
 int main()
 {
+	CMessage *msg;
+	uint8_t buf[MAX_MSG_SIZE];
+	int msg_len;
 	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
 	int recv_Len;
@@ -103,14 +107,25 @@ int main()
 			}
 			data_recv *data_recv_tcp;
 			data_recv_tcp = (data_recv *)malloc(sizeof(data_recv));
-			if(recv(socket_tcp, data_recv_tcp, sizeof(data_recv), MSG_DONTROUTE))
+			if((msg_len = recv(socket_tcp, (void *)buf, MAX_MSG_SIZE, MSG_DONTROUTE))!= -1)
 			{
-				if(data_recv_tcp->time_work == -1)
+				msg = cmessage__unpack(NULL, msg_len, buf);
+				if(msg == NULL)
+				{
+					printf("Клиент v2: ошибка при распаковывании сообщения\n");
+				}
+				else if(msg->time[0] == -1)
 				{
 					printf("Клиент v2: у сервера не было сообщений\n");
 				}
 				else
 				{
+					data_recv_tcp->time_work = msg->time[0];
+					data_recv_tcp->len_str = msg->len[0];
+					for(int i = 0; i < msg->len[0]; i++)
+					{
+						data_recv_tcp->str[i] = msg-> str[i];
+					}
 					output_recv(data_recv_tcp);
 				}
 			}

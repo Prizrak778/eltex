@@ -10,12 +10,15 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <unistd.h>
+#include "cmessage.pb-c.h"
 
 #define port_server 50000
 #define MAX_COL 50
 #define MAX_TIME_K 20
 #define MAX_TIME_L 20
 #define MAX_STR_LEN 100
+#define MAX_MSG_SIZE 4096
+
 //server
 struct ThreadArgs
 {
@@ -153,6 +156,8 @@ void *UDP_SEND_client_v2(void *arg)
 
 void *Threadclient1(void *arg)
 {
+	CMessage *msg;
+	uint8_t buf[MAX_MSG_SIZE];
 	int clntSock;
 	pthread_detach(pthread_self());
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
@@ -160,17 +165,34 @@ void *Threadclient1(void *arg)
 	free(arg);
 	data *data_recv;
 	data_recv = (data *)malloc(sizeof(data));
-	if(recv(clntSock, data_recv, sizeof(data), MSG_DONTROUTE))
+	int msg_len;
+	if((msg_len = recv(clntSock, (void *)buf, MAX_MSG_SIZE, MSG_DONTROUTE)) != -1)
 	{
 		printf("Севрер: принял сообщение от клиента v1\n");
 		pthread_mutex_lock(&queue.mutex);
 		if(queue.col_mess < MAX_COL)
 		{
+			//ALERT!!!!!!!!!!!!!!!!!
 			queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * data_recv->len_str);
-			strcpy(queue.str[queue.col_mess], data_recv->str);
-			queue.time_work[queue.col_mess] = data_recv->time_work;
-			queue.len_str[queue.col_mess] = data_recv->len_str;
+			//ALERT!!!!!!!!!!!!!!!!!
+			
+			//size_t msg_len = read_buffer (MAX_MSG_SIZE, buf);
+			msg = cmessage__unpack(NULL, msg_len, buf);
+			if(msg == NULL)
+			{
+				printf("Сервер: ошибка при распаковывании сообщения\n");
+				return NULL;
+			}
+			queue.time_work[queue.col_mess] = msg->time[0];
+			queue.len_str[queue.col_mess] = msg->len[0];
+			for(int i = 0; i < msg->len[0]; i++)
+			{
+				queue.str[queue.col_mess][i] = msg->str[i];
+			}
+			printf("Сервер: принял сообщение строка %s время %d длина %d\n",queue.str[queue.col_mess], queue.time_work[queue.col_mess], queue.len_str[queue.col_mess]);
+
 			queue.col_mess++;
+			//cmessage__free_unpacked(msg, NULL);
 			printf("Сервер: в очередь добавлено сообщение\n");
 		}
 		else
@@ -189,18 +211,24 @@ void *Threadclient1(void *arg)
 
 void del_mess()
 {
-	for(int i = 0; i < queue.col_mess - 1; i++)
+	int i;
+	for(i = 0; i < queue.col_mess - 1; i++)
 	{
 		queue.time_work[i] = queue.time_work[i + 1];
 		queue.len_str[i] = queue.len_str[i + 1];
 		queue.str[i] = queue.str[i + 1];
 	}
 	queue.col_mess--;
+	//printf("i = %d\n", queue.col_mess);
+	//free(queue.str[queue.col_mess]);
 }
 
 void *Threadclient2(void *arg)
 {
 	int clntSock;
+	CMessage msg = CMESSAGE__INIT;
+	void *buf;
+	int len_buf;
 	pthread_detach(pthread_self());
 	clntSock = ((struct ThreadArgs *) arg) -> clntSock;
 	printf("Сервер: клиент версии 2 обнаружен, номер сокета = %d\n", clntSock);
@@ -210,9 +238,21 @@ void *Threadclient2(void *arg)
 	now_send = (data *)malloc(sizeof(data));
 	if(queue.col_mess > 0)
 	{
-		strcpy(now_send->str, queue.str[0]);
-		now_send->time_work = queue.time_work[0];
-		now_send->len_str = queue.len_str[0];
+		msg.n_len = 1;
+		msg.n_time = 1;
+		msg.n_str = strlen(queue.str[0]) + 1;
+		msg.len = malloc(sizeof(int) * msg.n_len);
+		msg.time = malloc(sizeof(int) * msg.n_time);
+		msg.str = malloc(sizeof(int) * msg.n_str);
+		msg.len[0] = queue.len_str[0];
+		msg.time[0] = queue.time_work[0];
+		for(int i = 0; i < msg.n_str; i++)
+		{
+			msg.str[i] = queue.str[0][i];
+		}
+		len_buf = cmessage__get_packed_size(&msg);
+		buf = malloc(len_buf);
+		cmessage__pack(&msg, buf);
 		del_mess();
 	}
 	else
@@ -223,7 +263,7 @@ void *Threadclient2(void *arg)
 	pthread_mutex_unlock(&queue.mutex);
 	if(now_send != NULL)
 	{
-		if(send(clntSock, now_send, sizeof(data), MSG_WAITALL) == -1)
+		if(send(clntSock, buf, len_buf, MSG_WAITALL) == -1)
 		{
 			printf("Сервер: не смог отправить сообщение\n");
 		}
@@ -269,9 +309,7 @@ int main(int argc, char* argv[])
 	int clntSock;
 	struct DATA_ip ip_udp;
 	struct sockaddr_in st_addr;
-	struct sockaddr_in st_addr_ac;
-	struct ThreadArgs *thread_client, *thread_udp;
-	unsigned short ServPort;
+	struct ThreadArgs *thread_client;
 	//thread_udp = i
 	struct DATA_recv* data_recv = (struct DATA_recv *) malloc(sizeof(struct DATA_recv));
 	//ServPort = atoi(argv[1]);

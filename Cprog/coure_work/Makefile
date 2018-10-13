@@ -5,22 +5,18 @@ run : server client client2
 	xterm ./client2 &
 	xterm ./client2 &
 	xterm ./client2 &
-	xterm ./server &
 
-server : server.o
-	gcc server.o -Wall -o server -lpthread
-server.o : server.c
-	gcc -g -c server.c
+server : server.c
+	protoc-c --c_out=. cmessage.proto
+	gcc cmessage.pb-c.c server.c -Wall -o server -lprotobuf-c -lpthread
 
-client: client.o
-	gcc client.o -Wall -o client -lpthread
-client.o : client.c
-	gcc -g -c client.c
+client: client.c
+	protoc-c --c_out=. cmessage.proto
+	gcc cmessage.pb-c.c client.c -Wall -o client -lprotobuf-c -lpthread
 
-client2: client2.o
-	gcc client2.o -Wall -o client2 -lpthread
-client2.o: client2.c
-	gcc -g -c client2.c
+client2: client2.c
+	protoc-c --c_out=. cmessage.proto
+	gcc cmessage.pb-c.c  client2.c -Wall -o client2 -lprotobuf-c -lpthread
 
 clean : server server.o client client.o client2 client2
 	rm server server.o
