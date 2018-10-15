@@ -166,9 +166,9 @@ void *Threadclient1(void *arg)
 	data *data_recv;
 	data_recv = (data *)malloc(sizeof(data));
 	int msg_len;
-	if((msg_len = recv(clntSock, (void *)buf, MAX_MSG_SIZE, MSG_DONTROUTE)) != -1)
+	if((msg_len = recv(clntSock, (void *)buf, MAX_MSG_SIZE, MSG_DONTROUTE)) > 0)
 	{
-		printf("Севрер: принял сообщение от клиента v1\n");
+		printf("Севрер: принял сообщение от клиента v1 \n");
 		pthread_mutex_lock(&queue.mutex);
 		if(queue.col_mess < MAX_COL)
 		{
@@ -220,7 +220,7 @@ void del_mess()
 	}
 	queue.col_mess--;
 	//printf("i = %d\n", queue.col_mess);
-	//free(queue.str[queue.col_mess]);
+	//free(queue.str[queue.col_mess - 1]);
 }
 
 void *Threadclient2(void *arg)

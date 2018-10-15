@@ -1,45 +1,23 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
+#include "Header.h"
 #include "cmessage.pb-c.h"
 
-#define port_serv 50000
-#define MAX_TIME_T 20
-#define MAX_SIZE_STR 100
+typedef struct DATA_tcp data_send_tcp;
 
 
-//Client v1
-struct DATA_send
+
+void random_string(CMessage *msg, void **buf, int *time_T, int *len_buf)
 {
-	int client_v;
-};
-
-struct DATA_recv_udp
-{
-	int mess;
-	char ip_addr_udp[16];
-};
-
-struct DATA_send_tcp
-{
-	int time_work;
-	char str[MAX_SIZE_STR];
-	int len_str;
-};
-typedef struct DATA_send_tcp data_send_tcp;
-
-void random_string(data_send_tcp *data_string)
-{
-	data_string->time_work = rand()%MAX_TIME_T;
-	data_string->len_str = rand()%MAX_SIZE_STR;
-	for(int i = 0; i < data_string->len_str-1; i++)
+	msg->n_len = 1;
+	msg->n_time = 1;
+	msg->n_str = rand()%MAX_SIZE_STR;
+	msg->len = malloc(sizeof(int) * msg->n_len);
+	msg->time = malloc(sizeof(int) * msg->n_time);
+	msg->str = malloc(sizeof(int) * msg->n_str);
+	msg->len[0] = msg->n_str;
+	msg->time[0] = rand()%MAX_TIME_T;
+	*time_T = msg->time[0];
+	printf("Клиент v1: сгенерировал сообщение ");
+	for(int i = 0; i < msg->n_str - 1; i++)
 	{
 		int case_ascii = rand()%3;
 		char char_ascii;
@@ -55,26 +33,24 @@ void random_string(data_send_tcp *data_string)
 		{
 			char_ascii = 97 + rand()%25;
 		}
-		data_string->str[i] = char_ascii;
+		msg->str[i] = char_ascii;
+		printf("%c", char_ascii);
 	}
-	data_string->str[data_string->len_str] = '\0';
-	printf("Клиент v1: сгенерировал сообещине %s\n", data_string->str);
-	printf("Клиент v1: длина строки %d\n", data_string->len_str);
-	printf("Клиент v1: время обработки %d\n", data_string->time_work);
+	printf("\n");
+	msg->str[msg->n_str - 1] = '\0';
+	printf("Клиент v1: длина строки %d\n", (int)msg->len[0]);
+	printf("Клиент v1: время обработки %d\n", (int )msg->time[0]);
+	*len_buf = cmessage__get_packed_size(msg);
+	*buf = malloc(*len_buf);
+	cmessage__pack(msg, *buf);
+
 }
 
-int main()
+int init_socket_udp()
 {
-	CMessage msg = CMESSAGE__INIT;
-	void *buf;
-	int len_buf;
-	srand(getpid());
-	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
-	int recvLen;
-	struct sockaddr_in st_addr_tcp, st_addr_udp;
-	struct DATA_send *data_send = (struct DATA_send *)malloc(sizeof(struct DATA_send));
-	data_send->client_v = 1;
+	int socket_udp;
+	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	st_addr_udp.sin_addr.s_addr = htonl(INADDR_ANY);
 	st_addr_udp.sin_port = htons(port_serv + 1);
@@ -91,6 +67,21 @@ int main()
 	{
 		printf("Клиент v1: сокет не забиндился для udp\n");
 	}
+	return socket_udp;
+}
+
+int main()
+{
+	CMessage msg = CMESSAGE__INIT;
+	void *buf;
+	int len_buf;
+	srand(getpid());
+	int socket_tcp, socket_udp;
+	int recvLen;
+	struct sockaddr_in st_addr_tcp;
+	struct DATA_client_v *data_send = (struct DATA_client_v *)malloc(sizeof(struct DATA_client_v));
+	data_send->client_v = 1;
+	socket_udp = init_socket_udp();
 	printf("Клиент v1: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
@@ -122,31 +113,15 @@ int main()
 			}
 			//Отправить версию клиента по tpc
 			printf("Клиент v1: приконектился к серверу\n");
-			if(send(socket_tcp, data_send, sizeof(struct DATA_send), MSG_WAITALL) == -1)
+			if(send(socket_tcp, data_send, sizeof(struct DATA_client_v), MSG_WAITALL) == -1)
 			{
 				printf("Клиент v1: данные по клиенту не отправлены\n");
 				close(socket_tcp);
 				sleep(5);
 				exit(1);
 			}
-			data_send_tcp *data_string;
-			data_string = (data_send_tcp *)malloc(sizeof(data_send_tcp));
-			random_string(data_string);
-			msg.n_len = 1;
-			msg.n_time = 1;
-			msg.n_str = strlen(data_string->str) + 1;
-			msg.len = malloc(sizeof(int) * msg.n_len);
-			msg.time = malloc(sizeof(int) * msg.n_time);
-			msg.str = malloc(sizeof(int) * msg.n_str);
-			msg.len[0] = data_string->len_str;
-			msg.time[0] = data_string->time_work;
-			for(int i = 0; i < msg.n_str; i++)
-			{
-				msg.str[i]=data_string->str[i];
-			}
-			len_buf = cmessage__get_packed_size(&msg);
-			buf = malloc(len_buf);
-			cmessage__pack(&msg, buf);
+			int time_T;
+			random_string(&msg, &buf, &time_T, &len_buf);
 			printf("Клиент v1: размер от %d\n", len_buf);
 			if(send(socket_tcp, buf, len_buf, MSG_WAITALL) != len_buf)
 			{
@@ -161,7 +136,6 @@ int main()
 			free(buf);
 			close(socket_tcp);
 			printf("Клиент v1: сообщение отправлено\n");
-			int time_T = data_string->time_work;
 			sleep(time_T);
 		}
 	}
