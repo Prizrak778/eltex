@@ -1,23 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <errno.h>
 #include <pthread.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <time.h>
-#include <unistd.h>
 #include "cmessage.pb-c.h"
+#include "Header.h"
 
-#define port_server 50000
 #define MAX_COL 50
 #define MAX_TIME_K 20
 #define MAX_TIME_L 20
-#define MAX_STR_LEN 100
-#define MAX_MSG_SIZE 4096
 
 //server
 struct ThreadArgs
@@ -25,10 +14,7 @@ struct ThreadArgs
 	int clntSock;
 };
 
-struct DATA_recv
-{
-	int client_v;
-};
+
 
 struct DATA_send_udp
 {
@@ -54,13 +40,8 @@ queue = {
 	PTHREAD_MUTEX_INITIALIZER
 };
 
-struct DATA
-{
-	int time_work;
-	char str[MAX_STR_LEN];
-	int len_str;
-};
-typedef struct DATA data;
+
+typedef struct DATA_tcp data;
 
 int UDP_socket_int()
 {
@@ -92,7 +73,7 @@ void *UDP_SEND_client_v1(void *arg)
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
-	st_addr_udp.sin_port = htons(port_server + 1);
+	st_addr_udp.sin_port = htons(port_serv + 1);
 	printf("Сервер: готов отправлять udp оповещения для клиентов v1\n");
 	while(1)
 	{
@@ -127,7 +108,7 @@ void *UDP_SEND_client_v2(void *arg)
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	inet_aton(ip_udp->ip_addr_udp_broad, &st_addr_udp.sin_addr);
-	st_addr_udp.sin_port = htons(port_server + 1);
+	st_addr_udp.sin_port = htons(port_serv + 1);
 	printf("Сервер: готов отправлять udp оповещения для клиентов v2\n");
 	while(1)
 	{
@@ -168,21 +149,21 @@ void *Threadclient1(void *arg)
 	int msg_len;
 	if((msg_len = recv(clntSock, (void *)buf, MAX_MSG_SIZE, MSG_DONTROUTE)) > 0)
 	{
-		printf("Севрер: принял сообщение от клиента v1 \n");
+		printf("Севрер: принял сообщение от клиента v1 len = %d\n", msg_len);
 		pthread_mutex_lock(&queue.mutex);
 		if(queue.col_mess < MAX_COL)
 		{
-			//ALERT!!!!!!!!!!!!!!!!!
-			queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * data_recv->len_str);
-			//ALERT!!!!!!!!!!!!!!!!!
-			
+						
 			//size_t msg_len = read_buffer (MAX_MSG_SIZE, buf);
 			msg = cmessage__unpack(NULL, msg_len, buf);
 			if(msg == NULL)
 			{
 				printf("Сервер: ошибка при распаковывании сообщения\n");
 				return NULL;
-			}
+			}//ALERT!!!!!!!!!!!!!!!!!
+			queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * msg->len[0]);
+			//ALERT!!!!!!!!!!!!!!!!!
+
 			queue.time_work[queue.col_mess] = msg->time[0];
 			queue.len_str[queue.col_mess] = msg->len[0];
 			for(int i = 0; i < msg->len[0]; i++)
@@ -193,7 +174,7 @@ void *Threadclient1(void *arg)
 
 			queue.col_mess++;
 			//cmessage__free_unpacked(msg, NULL);
-			printf("Сервер: в очередь добавлено сообщение\n");
+			printf("Сервер: в очередь добавлено сообщение кол = %d\n", queue.col_mess);
 		}
 		else
 		{
@@ -241,6 +222,7 @@ void *Threadclient2(void *arg)
 		msg.n_len = 1;
 		msg.n_time = 1;
 		msg.n_str = strlen(queue.str[0]) + 1;
+		printf("str for client v2: %s\n", queue.str[0]);
 		msg.len = malloc(sizeof(int) * msg.n_len);
 		msg.time = malloc(sizeof(int) * msg.n_time);
 		msg.str = malloc(sizeof(int) * msg.n_str);
@@ -312,11 +294,11 @@ int main(int argc, char* argv[])
 	struct sockaddr_in st_addr;
 	struct ThreadArgs *thread_client;
 	//thread_udp = i
-	struct DATA_recv* data_recv = (struct DATA_recv *) malloc(sizeof(struct DATA_recv));
+	struct DATA_client_v* data_recv = (struct DATA_client_v *) malloc(sizeof(struct DATA_client_v));
 	//ServPort = atoi(argv[1]);
 	st_addr.sin_family = AF_INET;
 	st_addr.sin_addr.s_addr = INADDR_ANY;
-	st_addr.sin_port = htons(port_server);
+	st_addr.sin_port = htons(port_serv);
 	pthread_t threadID;
 	input(argc, argv, &ip_udp);
 	if(pthread_create(&threadID, NULL, UDP_SEND_client_v1, &ip_udp) == -1)
@@ -364,7 +346,7 @@ int main(int argc, char* argv[])
 				printf("Сервер: malloc is fail\n");
 			}
 			thread_client -> clntSock = clntSock;
-			if(recv(clntSock, data_recv, sizeof(struct DATA_recv), MSG_DONTROUTE))
+			if(recv(clntSock, data_recv, sizeof(struct DATA_client_v), MSG_DONTROUTE))
 			{
 				if(data_recv->client_v == 1)
 				{

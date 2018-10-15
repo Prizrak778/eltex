@@ -32,7 +32,7 @@ void random_string(CMessage *msg, void **buf, int *time_T, int *len_buf)
 			char_ascii = 97 + rand()%25;
 		}
 		msg->str[i] = char_ascii;
-		printf("%c", char_ascii);
+		printf("%c", msg->str[i]);
 	}
 	printf("\n");
 	msg->str[msg->n_str - 1] = '\0';
@@ -41,32 +41,7 @@ void random_string(CMessage *msg, void **buf, int *time_T, int *len_buf)
 	*len_buf = cmessage__get_packed_size(msg);
 	*buf = malloc(*len_buf);
 	cmessage__pack(msg, *buf);
-
 }
-
-/*int init_socket_udp()
-{
-	int broadcastPermission = 1;
-	int socket_udp;
-	struct sockaddr_in st_addr_udp;
-	st_addr_udp.sin_family = AF_INET;
-	st_addr_udp.sin_addr.s_addr = htonl(INADDR_ANY);
-	st_addr_udp.sin_port = htons(port_serv + 1);
-	
-	if(( socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	{
-		printf("Клиент v1: сокет не получен для udp\n");
-	}
-	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0)
-	{
-		printf("Клиент v1: сокет не смог установить параметры для сокета\n");
-	}
-	if(bind(socket_udp, (struct sockaddr *) &st_addr_udp, sizeof(st_addr_udp)) < 0)
-	{
-		printf("Клиент v1: сокет не забиндился для udp\n");
-	}
-	return socket_udp;
-}*/
 
 int main()
 {
