@@ -3,8 +3,6 @@
 
 typedef struct DATA_tcp data_send_tcp;
 
-
-
 void random_string(CMessage *msg, void **buf, int *time_T, int *len_buf)
 {
 	msg->n_len = 1;

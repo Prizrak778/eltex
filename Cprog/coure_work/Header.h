@@ -11,6 +11,7 @@
 #define port_serv 50000
 #define MAX_TIME_T 20
 #define MAX_SIZE_STR 100
+#define MAX_MSG_SIZE 4096
 
 struct DATA_client_v
 {

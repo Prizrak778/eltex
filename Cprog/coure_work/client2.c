@@ -1,58 +1,28 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <unistd.h>
+#include "Header.h"
 #include "cmessage.pb-c.h"
 
-#define port_serv 50000
-#define MAX_STR_LEN 100
-#define MAX_MSG_SIZE 4096
-
 //Client v2
-struct DATA_send
-{
-	int client_v;
-};
 
-struct DATA_recv_udp
-{
-	int mess;
-	char ip_addr_udp[16];
-};
+typedef struct DATA_tcp data_recv;
 
-struct DATA
-{
-	int time_work;
-	char str[MAX_STR_LEN];
-	int len_str;
-};
-typedef struct DATA data_recv;
-
-void output_recv(data_recv *data_recv_tcp)
+void output_recv(CMessage *msg)
 {
 	printf("Клиент v2: получил сообещние от сервера\n");
-	printf("Клиент v2: время обработки сообщения %d\n", data_recv_tcp->time_work);
-	printf("Клиент v2: длина строки %d\n", data_recv_tcp->len_str);
-	printf("Клиент v2: строка %s\n", data_recv_tcp->str);
+	printf("Клиент v2: время обработки сообщения %d\n", msg->time[0]);
+	printf("Клиент v2: длина строки %d\n", msg->len[0]);
+	printf("Клиент v2: строка ");
+	for(int i = 0; i < msg->len[0] - 1; i++)
+	{
+		printf("%c", msg->str[i]);
+	}
+	printf("\n");
 }
 
-int main()
+int init_socket_udp()
 {
-	CMessage *msg;
-	uint8_t buf[MAX_MSG_SIZE];
-	int msg_len;
-	int socket_tcp, socket_udp;
 	int broadcastPermission = 1;
-	int recv_Len;
-	struct sockaddr_in st_addr_tcp, st_addr_udp;
-	struct DATA_send* data_send = (struct DATA_send *) malloc(sizeof(struct DATA_send));
-	data_send->client_v = 2;
+	int socket_udp;
+	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
 	st_addr_udp.sin_addr.s_addr = htonl(INADDR_ANY);
 	st_addr_udp.sin_port = htons(port_serv + 1);
@@ -68,6 +38,20 @@ int main()
 	{
 		printf("Клиент v2: сокет не забиндился для udp\n");
 	}
+	return socket_udp;
+} 
+
+int main()
+{
+	CMessage *msg;
+	uint8_t buf[MAX_MSG_SIZE];
+	int msg_len;
+	int socket_tcp, socket_udp;
+	int recv_Len;
+	struct sockaddr_in st_addr_tcp;
+	struct DATA_client_v* data_send = (struct DATA_client_v *) malloc(sizeof(struct DATA_client_v));
+	data_send->client_v = 2;
+	socket_udp = init_socket_udp();
 	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
@@ -99,14 +83,12 @@ int main()
 			}
 			//Отправить версию клиента по tcp
 			printf("Клиент v2: приконектился к серверу\n");
-			if(send(socket_tcp, data_send, sizeof(struct DATA_send), MSG_WAITALL) == -1)
+			if(send(socket_tcp, data_send, sizeof(struct DATA_client_v), MSG_WAITALL) == -1)
 			{
 				printf("Клиент v2: данные по клиенту не отправлены\n");
 				close(socket_tcp);
 				sleep(5);
 			}
-			data_recv *data_recv_tcp;
-			data_recv_tcp = (data_recv *)malloc(sizeof(data_recv));
 			if((msg_len = recv(socket_tcp, (void *)buf, MAX_MSG_SIZE, MSG_DONTROUTE))!= -1)
 			{
 				msg = cmessage__unpack(NULL, msg_len, buf);
@@ -120,13 +102,7 @@ int main()
 				}
 				else
 				{
-					data_recv_tcp->time_work = msg->time[0];
-					data_recv_tcp->len_str = msg->len[0];
-					for(int i = 0; i < msg->len[0]; i++)
-					{
-						data_recv_tcp->str[i] = msg-> str[i];
-					}
-					output_recv(data_recv_tcp);
+					output_recv(msg);
 				}
 			}
 			else
@@ -134,8 +110,7 @@ int main()
 				printf("Клиент v2: ошибка получения сообщения от сервера\n");
 			}
 			close(socket_tcp);
-			free(data_recv_tcp);
-			int time_T = data_recv_tcp->time_work;
+			int time_T = msg->time[0];
 			sleep(time_T);
 		}
 	}
