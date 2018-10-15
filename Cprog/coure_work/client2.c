@@ -18,7 +18,7 @@ void output_recv(CMessage *msg)
 	printf("\n");
 }
 
-int init_socket_udp()
+/*int init_socket_udp()
 {
 	int broadcastPermission = 1;
 	int socket_udp;
@@ -39,7 +39,7 @@ int init_socket_udp()
 		printf("Клиент v2: сокет не забиндился для udp\n");
 	}
 	return socket_udp;
-} 
+}*/
 
 int main()
 {
@@ -51,7 +51,8 @@ int main()
 	struct sockaddr_in st_addr_tcp;
 	struct DATA_client_v* data_send = (struct DATA_client_v *) malloc(sizeof(struct DATA_client_v));
 	data_send->client_v = 2;
-	socket_udp = init_socket_udp();
+	//
+	socket_udp = init_socket_udp(SO_REUSEPORT, 2);
 	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);

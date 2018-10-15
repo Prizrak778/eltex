@@ -301,6 +301,7 @@ int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 	ip_udp->ip_addr_udp_broad[i + 2]='5';
 	ip_udp->ip_addr_udp_broad[i + 3]='5';
 	ip_udp->ip_addr_udp_broad[i + 4]='\0';
+	printf("%s\n", ip_udp->ip_addr_udp_broad);
 }
 
 int main(int argc, char* argv[])
