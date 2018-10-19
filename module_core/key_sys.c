@@ -21,7 +21,6 @@ struct tty_driver *my_driver;
 char kbledstatus = 0;
 int *pstatus_now = 0x07;
 #define BLINK_DELAY   HZ/5
-#define ALL_LEDS_ON   0x07
 #define RESTORE_LEDS  0xFF
 /*
  * Function my_timer_func blinks the keyboard LEDs periodically by invoking
