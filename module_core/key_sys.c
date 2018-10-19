@@ -1,4 +1,9 @@
 #include <linux/module.h>
+#include <linux/printk.h>
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
+#include <linux/fs.h>
+#include <linux/string.h>
 #include <linux/configfs.h>
 #include <linux/init.h>
 #include <linux/tty.h>          /* For fg_console, MAX_NR_CONSOLES */
@@ -6,11 +11,15 @@
 #include <linux/vt.h>
 #include <linux/console_struct.h>       /* For vc_cons */
 #include <linux/vt_kern.h>
+//Работоспособность проверена для версии ядра 4.9.0-8-amd64(Debian)
 MODULE_DESCRIPTION("Example module illustrating the use of Keyboard LEDs.");
 MODULE_LICENSE("GPL");
+static struct kobject *kobject_key_sys;
+static int foo;
 struct timer_list my_timer;
 struct tty_driver *my_driver;
 char kbledstatus = 0;
+int *pstatus_now = 0x07;
 #define BLINK_DELAY   HZ/5
 #define ALL_LEDS_ON   0x07
 #define RESTORE_LEDS  0xFF
@@ -28,20 +37,55 @@ char kbledstatus = 0;
  *     /usr/src/linux/drivers/char/keyboard.c, function setledstate().
  *
  */
+static ssize_t foo_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+		return sprintf(buf, "%d\n", foo);
+}
+
+static ssize_t foo_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+		char *led_num = 0x00;
+		sscanf(buf, "%du", &foo);
+		if(foo > 7 || foo < 1)
+		{
+			//printk()
+			foo = 7;
+		}
+		led_num += foo;
+		pstatus_now = (int *)led_num;
+		return count;
+}
+
+static struct kobj_attribute foo_attribute =__ATTR(foo, 0660, foo_show, foo_store);
+
 static void my_timer_func(unsigned long ptr)
 {
         int *pstatus = (int *)ptr;
-        if (*pstatus == ALL_LEDS_ON)
+        if (*pstatus == pstatus_now)
                 *pstatus = RESTORE_LEDS;
         else
-                *pstatus = ALL_LEDS_ON;
+                *pstatus = pstatus_now;
         (my_driver->ops->ioctl) (vc_cons[fg_console].d->port.tty, KDSETLED,
                             *pstatus);
         my_timer.expires = jiffies + BLINK_DELAY;
         add_timer(&my_timer);
 }
+
 static int __init kbleds_init(void)
 {
+		int error = 0;
+		pr_debug("Module initia;ized successfully \n");
+		
+		kobject_key_sys = kobject_create_and_add("key_sys", kernel_kobj);
+		
+		if(!kobject_key_sys)
+			return -ENOMEM;
+
+		error = sysfs_create_file(kobject_key_sys, &foo_attribute.attr);
+		if(error)
+		{
+			pr_debug("failed to create the foo file in /sys/kernel/kobject_key_sys\n");
+		}
         int i;
         printk(KERN_INFO "kbleds: loading\n");
         printk(KERN_INFO "kbleds: fgconsole is %x\n", fg_console);
@@ -63,10 +107,12 @@ static int __init kbleds_init(void)
         my_timer.data = (unsigned long)&kbledstatus;
         my_timer.expires = jiffies + BLINK_DELAY;
         add_timer(&my_timer);
-        return 0;
+        return error;
 }
 static void __exit kbleds_cleanup(void)
 {
+		pr_debug("Module un initialized successfully \n");
+		kobject_put(kobject_key_sys);
         printk(KERN_INFO "kbleds: unloading...\n");
         del_timer(&my_timer);
         (my_driver->ops->ioctl) (vc_cons[fg_console].d->port.tty, KDSETLED,
