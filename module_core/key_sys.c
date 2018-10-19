@@ -11,7 +11,9 @@
 #include <linux/vt.h>
 #include <linux/console_struct.h>       /* For vc_cons */
 #include <linux/vt_kern.h>
+
 //Работоспособность проверена для версии ядра 4.9.0-8-amd64(Debian)
+
 MODULE_DESCRIPTION("Example module illustrating the use of Keyboard LEDs.");
 MODULE_LICENSE("GPL");
 static struct kobject *kobject_key_sys;
@@ -47,7 +49,7 @@ static ssize_t foo_store(struct kobject *kobj, struct kobj_attribute *attr, cons
 		sscanf(buf, "%du", &foo);
 		if(foo > 7 || foo < 1)
 		{
-			//printk()
+			printk(KERN_INFO "foo out of range, foo = 7\n");
 			foo = 7;
 		}
 		led_num += foo;
