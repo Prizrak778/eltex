@@ -14,3 +14,10 @@ mycrontab
 .config.*
 game_fild
 main.sh.log
+*.order
+*.symvers
+*.mod.c
+*.ko
+*.cmd
+.tmp_versions
+
