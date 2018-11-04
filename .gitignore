@@ -20,4 +20,4 @@ main.sh.log
 *.ko
 *.cmd
 .tmp_versions
-
+*.swo
