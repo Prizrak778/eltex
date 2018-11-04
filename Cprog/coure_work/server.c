@@ -23,7 +23,7 @@ struct DATA_ip
 struct 
 {
 	pthread_mutex_t mutex;
-	char *str[MAX_COL];
+	char str[MAX_COL][MAX_SIZE_STR];
 	int time_work[MAX_COL];
 	int len_str[MAX_COL];
 	int col_mess;
@@ -152,20 +152,18 @@ void *Threadclient1(void *arg)
 			{
 				printf("Сервер: ошибка при распаковывании сообщения\n");
 				return NULL;
-			}//ALERT!!!!!!!!!!!!!!!!!
-			queue.str[queue.col_mess] = (char *) malloc(sizeof(char) * msg->len[0]);
-			//ALERT!!!!!!!!!!!!!!!!!
-
+			}
 			queue.time_work[queue.col_mess] = msg->time[0];
 			queue.len_str[queue.col_mess] = msg->len[0];
+			//из-за того что msg->str не char strcpy() не работает коректно
 			for(int i = 0; i < msg->len[0]; i++)
 			{
 				queue.str[queue.col_mess][i] = msg->str[i];
 			}
-			printf("Сервер: принял сообщение строка %s время %d длина %d\n",queue.str[queue.col_mess], queue.time_work[queue.col_mess], queue.len_str[queue.col_mess]);
+			printf("Сервер: принял сообщение строка %s время %d длина %d\n", queue.str[queue.col_mess], queue.time_work[queue.col_mess], queue.len_str[queue.col_mess]);
 
 			queue.col_mess++;
-			//cmessage__free_unpacked(msg, NULL);
+			cmessage__free_unpacked(msg, NULL);
 			printf("Сервер: в очередь добавлено сообщение кол = %d\n", queue.col_mess);
 		}
 		else
@@ -189,11 +187,9 @@ void del_mess()
 	{
 		queue.time_work[i] = queue.time_work[i + 1];
 		queue.len_str[i] = queue.len_str[i + 1];
-		queue.str[i] = queue.str[i + 1];
+		strcpy(queue.str[i], queue.str[i + 1]);
 	}
 	queue.col_mess--;
-	//printf("i = %d\n", queue.col_mess);
-	//free(queue.str[queue.col_mess - 1]);
 }
 
 void *Threadclient2(void *arg)
@@ -214,7 +210,6 @@ void *Threadclient2(void *arg)
 		msg.n_len = 1;
 		msg.n_time = 1;
 		msg.n_str = strlen(queue.str[0]) + 1;
-		printf("str for client v2: %s\n", queue.str[0]);
 		msg.len = malloc(sizeof(int) * msg.n_len);
 		msg.time = malloc(sizeof(int) * msg.n_time);
 		msg.str = malloc(sizeof(int) * msg.n_str);
