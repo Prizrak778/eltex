@@ -14,14 +14,6 @@ struct ThreadArgs
 	int clntSock;
 };
 
-
-
-struct DATA_send_udp
-{
-	int mess;
-	char ip_addr_udp[16];
-};
-
 struct DATA_ip
 {
 	char ip_addr_udp[16];
@@ -40,18 +32,18 @@ queue = {
 	PTHREAD_MUTEX_INITIALIZER
 };
 
-
 typedef struct DATA_tcp data;
+typedef struct DATA_udp DATA_send_udp;
 
-int UDP_socket_int()
+int UDP_socket_int_server()
 {
+	int broadcastPermission = 1;
 	int socket_udp;
 	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
 	{
 		printf("Сервер: udp сокет не работает\n");
 		exit(1);
 	}
-	int broadcastPermission = 1;
 	if(setsockopt(socket_udp, SOL_SOCKET, SO_BROADCAST, (void *) &broadcastPermission, sizeof(broadcastPermission)) < 0)
 	{
 		printf("Сервер: для сокета udp не получилось задать парамметры для бродкаста\n");
@@ -68,7 +60,7 @@ int UDP_socket_int()
 void *UDP_SEND_client_v1(void *arg)
 {
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
-	int socket_udp = UDP_socket_int();
+	int socket_udp = UDP_socket_int_server();
 	printf("Сервер: udp сокет готов %d\n", socket_udp);
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
@@ -80,11 +72,11 @@ void *UDP_SEND_client_v1(void *arg)
 		pthread_mutex_lock(&queue.mutex);
 		if(queue.col_mess < MAX_COL)
 		{
-			struct DATA_send_udp *send_udp;
-			send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
+			DATA_send_udp *send_udp;
+			send_udp = (DATA_send_udp *)malloc(sizeof(DATA_send_udp));
 			send_udp->mess = 1;
 			strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
-			int size_send = sizeof(struct DATA_send_udp);
+			int size_send = sizeof(DATA_send_udp);
 			if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
 			{
 				printf("Сервер: ошибка при отправке udp оповещения для 1 типа клиентов\n");
@@ -103,7 +95,7 @@ void *UDP_SEND_client_v1(void *arg)
 void *UDP_SEND_client_v2(void *arg)
 {
 	struct DATA_ip *ip_udp = (struct DATA_ip *)arg;
-	int socket_udp = UDP_socket_int();
+	int socket_udp = UDP_socket_int_server();
 	printf("Сервер: udp сокет готов %d\n", socket_udp);
 	struct sockaddr_in st_addr_udp;
 	st_addr_udp.sin_family = AF_INET;
@@ -115,11 +107,11 @@ void *UDP_SEND_client_v2(void *arg)
 		pthread_mutex_lock(&queue.mutex);
 		if(queue.col_mess > 0)
 		{
-			struct DATA_send_udp *send_udp;
-			send_udp = (struct DATA_send_udp *)malloc(sizeof(struct DATA_send_udp));
+			DATA_send_udp *send_udp;
+			send_udp = (DATA_send_udp *)malloc(sizeof(DATA_send_udp));
 			send_udp->mess = 2;
 			strcpy(send_udp->ip_addr_udp, ip_udp->ip_addr_udp);
-			int size_send = sizeof(struct DATA_send_udp);
+			int size_send = sizeof(DATA_send_udp);
 			if(sendto(socket_udp, send_udp, size_send, 0, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) != size_send)
 			{
 				printf("Сервер: ошибка при отправке udp оповещения для 2 типа клиентов\n");
@@ -284,6 +276,7 @@ int input(int argc, char* argv[], struct DATA_ip *ip_udp)
 	ip_udp->ip_addr_udp_broad[i + 3]='5';
 	ip_udp->ip_addr_udp_broad[i + 4]='\0';
 	printf("%s\n", ip_udp->ip_addr_udp_broad);
+	return 0;
 }
 
 int main(int argc, char* argv[])

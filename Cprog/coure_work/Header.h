@@ -18,7 +18,7 @@ struct DATA_client_v
 	int client_v;
 };
 
-struct DATA_recv_udp
+struct DATA_udp
 {
 	int mess;
 	char ip_addr_udp[16];

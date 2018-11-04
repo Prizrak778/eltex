@@ -4,6 +4,7 @@
 //Client v2
 
 typedef struct DATA_tcp data_recv;
+typedef struct DATA_udp DATA_recv_udp;
 
 void output_recv(CMessage *msg)
 {
@@ -18,29 +19,6 @@ void output_recv(CMessage *msg)
 	printf("\n");
 }
 
-/*int init_socket_udp()
-{
-	int broadcastPermission = 1;
-	int socket_udp;
-	struct sockaddr_in st_addr_udp;
-	st_addr_udp.sin_family = AF_INET;
-	st_addr_udp.sin_addr.s_addr = htonl(INADDR_ANY);
-	st_addr_udp.sin_port = htons(port_serv + 1);
-	if((socket_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
-	{
-		printf("Клиент v2: сокет не получен для udp\n");
-	}
-	if(setsockopt(socket_udp, SOL_SOCKET, SO_REUSEPORT, (void *)&broadcastPermission, sizeof(broadcastPermission)) < 0)
-	{
-		printf("Клиент v2: сокет не смог установить параметры для сокета\n");
-	}
-	if(bind(socket_udp, (struct sockaddr *)&st_addr_udp, sizeof(st_addr_udp)) < 0)
-	{
-		printf("Клиент v2: сокет не забиндился для udp\n");
-	}
-	return socket_udp;
-}*/
-
 int main()
 {
 	CMessage *msg;
@@ -51,14 +29,13 @@ int main()
 	struct sockaddr_in st_addr_tcp;
 	struct DATA_client_v* data_send = (struct DATA_client_v *) malloc(sizeof(struct DATA_client_v));
 	data_send->client_v = 2;
-	//
 	socket_udp = init_socket_udp(SO_REUSEPORT, 2);
 	printf("Клиент v2: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	struct DATA_recv_udp *ip_udp;
-	ip_udp = (struct DATA_recv_udp *)malloc(sizeof(struct DATA_recv_udp));
-	int size_send = sizeof(struct DATA_recv_udp);
+	DATA_recv_udp *ip_udp;
+	ip_udp = (DATA_recv_udp *)malloc(sizeof(DATA_recv_udp));
+	int size_send = sizeof(DATA_recv_udp);
 	while(1)
 	{
 		printf("Клиент v2: ждёт udp сообщения\n");

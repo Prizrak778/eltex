@@ -2,6 +2,7 @@
 #include "cmessage.pb-c.h"
 
 typedef struct DATA_tcp data_send_tcp;
+typedef struct DATA_udp DATA_recv_udp;
 
 void random_string(CMessage *msg, void **buf, int *time_T, int *len_buf)
 {
@@ -54,14 +55,13 @@ int main()
 	struct sockaddr_in st_addr_tcp;
 	struct DATA_client_v *data_send = (struct DATA_client_v *)malloc(sizeof(struct DATA_client_v));
 	data_send->client_v = 1;
-	//socket_udp = init_socket_udp();
 	socket_udp = init_socket_udp(SO_REUSEPORT, 1);
 	printf("Клиент v1: создал сокет\n");
 	st_addr_tcp.sin_family = AF_INET;
 	st_addr_tcp.sin_port = htons(port_serv);
-	struct DATA_recv_udp *ip_udp;
-	ip_udp = (struct DATA_recv_udp *)malloc(sizeof(struct DATA_recv_udp));
-	int size_send = sizeof(struct DATA_recv_udp);
+	DATA_recv_udp *ip_udp;
+	ip_udp = (DATA_recv_udp *)malloc(sizeof(DATA_recv_udp));
+	int size_send = sizeof(DATA_recv_udp);
 	while(1)
 	{
 		printf("Клиент v1: ждёт udp сообщения\n");
